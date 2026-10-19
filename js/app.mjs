@@ -1,5 +1,17 @@
 import { buildConfetti } from "./celebrate.mjs";
 import { nextRefusal, placeDodger, rectsOverlap } from "./dodge.mjs";
+import {
+  API_WAIT_MS,
+  IFRAME_API_SRC,
+  MUTED_WAIT_MS,
+  NOCOOKIE_HOST,
+  UNMUTED_WAIT_MS,
+  VIDEO_ID,
+  applyPlayerView,
+  createPlayerSession,
+  playerVars,
+  reducePlayer,
+} from "./player.mjs";
 
 const GAP = 16;
 const MARGIN = 8;
@@ -270,6 +282,134 @@ window.addEventListener("pageshow", (event) => {
   if (event.persisted) window.location.reload();
 });
 
+function prepareFrame(target) {
+  const iframe = target.getIframe?.();
+  if (!iframe) return;
+  iframe.setAttribute("playsinline", "1");
+  iframe.setAttribute("webkit-playsinline", "1");
+  iframe.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture");
+  iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+  iframe.title = "It's so fluffy I'm gonna die!";
+}
+
+function mountCelebrationVideo(root) {
+  const slot = root.querySelector("[data-yt-slot]");
+  const nodes = {
+    veil: root.querySelector("[data-player-veil]"),
+    status: root.querySelector("[data-player-status]"),
+    action: root.querySelector("[data-player-action]"),
+    fallback: root.querySelector("[data-player-fallback]"),
+    frame: root.querySelector("[data-player-frame]"),
+  };
+  if (!slot || !nodes.veil || !nodes.status || !nodes.action || !nodes.fallback || !nodes.frame) return;
+
+  let session = createPlayerSession();
+  let player = null;
+  let playTimer = 0;
+  let apiTimer = 0;
+  let started = false;
+
+  const paint = () => applyPlayerView(nodes, session.view);
+
+  const schedulePlayTimeout = () => {
+    window.clearTimeout(playTimer);
+    const wait = session.attempt === "muted" ? MUTED_WAIT_MS : UNMUTED_WAIT_MS;
+    playTimer = window.setTimeout(() => dispatch({ type: "timeout", reason: "play" }), wait);
+  };
+
+  const runAction = (action) => {
+    if (!player || !action) return;
+    if (action === "play-unmuted") {
+      player.unMute?.();
+      player.playVideo?.();
+      schedulePlayTimeout();
+      return;
+    }
+    if (action === "mute-and-play") {
+      player.mute?.();
+      player.playVideo?.();
+      schedulePlayTimeout();
+      return;
+    }
+    if (action === "unmute-and-play") {
+      player.unMute?.();
+      player.playVideo?.();
+    }
+  };
+
+  const dispatch = (event) => {
+    const result = reducePlayer(session, event);
+    session = result.session;
+    paint();
+    runAction(result.action);
+  };
+
+  nodes.action.addEventListener("click", () => dispatch({ type: "user-play" }));
+  paint();
+
+  apiTimer = window.setTimeout(() => dispatch({ type: "timeout", reason: "api" }), API_WAIT_MS);
+
+  const begin = () => {
+    if (started) return;
+    started = true;
+    try {
+      const vars = playerVars();
+      if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+        vars.origin = window.location.origin;
+      }
+      new window.YT.Player(slot, {
+        videoId: root.dataset.video || VIDEO_ID,
+        host: NOCOOKIE_HOST,
+        playerVars: vars,
+        events: {
+          onReady: (event) => {
+            window.clearTimeout(apiTimer);
+            player = event.target;
+            prepareFrame(player);
+            dispatch({ type: "api-ready" });
+          },
+          onStateChange: (event) => {
+            player = event.target;
+            const playing = event.data === 1;
+            let muted = false;
+            try {
+              muted = Boolean(event.target.isMuted()) || event.target.getVolume() === 0;
+            } catch {
+              muted = false;
+            }
+            dispatch({ type: "state", playing, muted });
+          },
+          onError: (event) => {
+            window.clearTimeout(apiTimer);
+            window.clearTimeout(playTimer);
+            dispatch({ type: "embed-error", code: Number(event.data) });
+          },
+        },
+      });
+    } catch {
+      window.clearTimeout(apiTimer);
+      dispatch({ type: "api-failed" });
+    }
+  };
+
+  window.onYouTubeIframeAPIReady = begin;
+  if (window.YT && window.YT.Player) {
+    begin();
+    return;
+  }
+  window.YTConfig = { host: NOCOOKIE_HOST };
+  const script = document.createElement("script");
+  script.src = IFRAME_API_SRC;
+  script.async = true;
+  script.onerror = () => {
+    window.clearTimeout(apiTimer);
+    dispatch({ type: "api-failed" });
+  };
+  document.head.append(script);
+}
+
 const dodger = document.querySelector("[data-dodge]");
 if (dodger) bindDodger(dodger);
 startCelebration();
+const celebration = document.querySelector("[data-player]");
+if (celebration) mountCelebrationVideo(celebration);

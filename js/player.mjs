@@ -34,6 +34,7 @@ export function createPlayerSession() {
     view: "loading",
     attempt: "unmuted",
     apiReady: false,
+    failure: null,
   };
 }
 
@@ -43,11 +44,16 @@ export function reducePlayer(session, event) {
 
   if (event.type === "api-failed" || event.type === "embed-error") {
     next.view = "fallback";
+    next.failure = event.type;
     return { session: next, action };
   }
 
   if (event.type === "api-ready") {
     next.apiReady = true;
+    if (next.view === "fallback" && next.failure === "timeout") {
+      next.view = "loading";
+      next.failure = null;
+    }
     if (next.view === "loading" && next.attempt === "unmuted") action = "play-unmuted";
     return { session: next, action };
   }
@@ -61,7 +67,10 @@ export function reducePlayer(session, event) {
   if (event.type === "timeout") {
     if (SETTLED.has(next.view)) return { session: next, action };
     if (event.reason === "api") {
-      if (!next.apiReady) next.view = "fallback";
+      if (!next.apiReady) {
+        next.view = "fallback";
+        next.failure = "timeout";
+      }
       return { session: next, action };
     }
     if (event.reason === "play") {
@@ -96,11 +105,9 @@ export function applyPlayerView(nodes, view) {
     nodes.veil.dataset.mode = "loading";
   } else if (view === "tap-to-play") {
     nodes.action.textContent = "Tap to play";
-    nodes.action.dataset.kind = "play";
     nodes.veil.dataset.mode = "play";
   } else if (view === "tap-for-sound") {
     nodes.action.textContent = "Tap for sound";
-    nodes.action.dataset.kind = "sound";
     nodes.veil.dataset.mode = "sound";
   } else {
     delete nodes.veil.dataset.mode;

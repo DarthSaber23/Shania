@@ -104,6 +104,22 @@ test("embed errors, a dead API, and a missed API show the watch link", () => {
   assert.equal(ready.action, null);
 });
 
+test("a late API still tries to play, and an embed error does not", () => {
+  const late = viewAfter([
+    { type: "timeout", reason: "api" },
+    { type: "api-ready" },
+  ]);
+  assert.equal(late.session.view, "loading");
+  assert.equal(late.action, "play-unmuted");
+
+  const denied = viewAfter([
+    { type: "embed-error", code: 101 },
+    { type: "api-ready" },
+  ]);
+  assert.equal(denied.session.view, "fallback");
+  assert.equal(denied.action, null);
+});
+
 test("a settled view ignores later play timeouts", () => {
   const playing = viewAfter([
     { type: "api-ready" },

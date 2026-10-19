@@ -32,6 +32,23 @@
     <p class="eyebrow">For us</p>
     <h1>Yeayy!</h1>
     <p class="note">I'm so happyyy… I'm gonna die!</p>
+    <div class="player" data-player data-video="tt6FPKyQamk">
+      <div class="player-frame" data-player-frame data-view="loading">
+        <div id="yt-player" data-yt-slot></div>
+        <div class="player-veil" data-player-veil data-mode="loading">
+          <p class="player-status" data-player-status aria-live="polite">Getting the video ready…</p>
+          <button class="btn yes player-action" type="button" data-player-action hidden>Tap to play</button>
+        </div>
+        <div class="player-fallback" data-player-fallback hidden>
+          <p class="player-status">The video wouldn't load here.</p>
+          <a class="btn yes player-link" href="https://www.youtube.com/watch?v=tt6FPKyQamk" rel="noopener noreferrer" target="_blank">Watch on YouTube</a>
+        </div>
+      </div>
+      <noscript>
+        <style>.player-veil { display: none !important; }</style>
+        <p class="player-noscript">The video wouldn't load here. <a href="https://www.youtube.com/watch?v=tt6FPKyQamk">Watch on YouTube</a></p>
+      </noscript>
+    </div>
   </main>
   <script type="module" src="js/app.mjs"></script>
 </body>

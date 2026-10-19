@@ -173,6 +173,108 @@ h1 {
   line-height: 1;
 }
 
+.player {
+  width: min(100%, calc(46dvh * 16 / 9));
+  margin: 0.95rem auto 0.1rem;
+}
+
+.player-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 1.15rem;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #ffe4ec 0%, transparent 62%),
+    #ffd0de;
+  box-shadow: inset 0 0 0 1px rgba(196, 91, 120, 0.35);
+}
+
+.player-frame iframe,
+.player-frame [data-yt-slot] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 1.15rem;
+}
+
+.player-veil,
+.player-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  text-align: center;
+}
+
+.player-veil[hidden],
+.player-fallback[hidden],
+.player-action[hidden] {
+  display: none !important;
+}
+
+.player-status,
+.player-noscript {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.98rem;
+  line-height: 1.35;
+}
+
+.player-noscript {
+  margin-top: 0.75rem;
+  color: var(--muted);
+}
+
+.player-noscript a {
+  color: var(--yes);
+  font-weight: 700;
+}
+
+.player-action,
+.player-link {
+  min-width: 10.5rem;
+  box-shadow: 0 8px 18px rgba(159, 18, 57, 0.18);
+}
+
+.player-frame[data-view="loading"] .player-veil {
+  background: transparent;
+}
+
+.player-frame[data-view="tap-to-play"] .player-veil {
+  background:
+    radial-gradient(90% 80% at 50% 18%, rgba(255, 228, 236, 0.25) 0%, transparent 70%),
+    rgba(255, 208, 222, 0.94);
+}
+
+.player-frame[data-view="tap-for-sound"] .player-veil {
+  justify-content: flex-start;
+  padding-top: 0.7rem;
+  background: linear-gradient(to bottom, rgba(74, 21, 36, 0.45), transparent 52%);
+  pointer-events: none;
+}
+
+.player-frame[data-view="tap-for-sound"] .player-action {
+  pointer-events: auto;
+}
+
+.player-frame[data-view="fallback"] iframe {
+  visibility: hidden;
+}
+
+.player-fallback {
+  background:
+    radial-gradient(120% 90% at 50% 0%, #ffe4ec 0%, transparent 62%),
+    #ffd0de;
+}
+
 .choices {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -299,6 +401,8 @@ h1 {
   .scene { padding: 0.6rem 0.9rem 0.7rem; }
   .choices { margin-top: 0.7rem; }
   .big-heart { font-size: 2rem; }
+  .player { margin-top: 0.5rem; }
+  .player-status { font-size: 0.92rem; }
 }
 
 .sr-only {
