@@ -34,7 +34,7 @@ function viewportBounds() {
 
 function obstacleRects(button) {
   return [...document.querySelectorAll("[data-avoid]")]
-    .filter((element) => element !== button && !element.contains(button))
+    .filter((element) => element !== button)
     .map((element) => {
       const box = element.getBoundingClientRect();
       return { x: box.left, y: box.top, width: box.width, height: box.height };
@@ -50,39 +50,64 @@ function detach(button) {
   spacer.className = "choice-spacer";
   spacer.setAttribute("aria-hidden", "true");
   button.before(spacer);
-  document.body.append(button);
   button.classList.add("is-fleeing");
   button.style.width = `${width}px`;
   button.style.height = `${height}px`;
 }
 
+function placeClear(button, previous, minTravel) {
+  const bounds = viewportBounds();
+  const obstacles = obstacleRects(button);
+  let width = button.offsetWidth;
+  let height = button.offsetHeight;
+  const maxWidth = bounds.right - bounds.left;
+  const maxHeight = bounds.bottom - bounds.top;
+  if (maxWidth > 0 && width > maxWidth) width = maxWidth;
+  if (maxHeight > 0 && height > maxHeight) height = maxHeight;
+  const options = [
+    { width, height, gap: GAP },
+    { width: Math.min(width, 112), height, gap: GAP },
+    { width: Math.min(width, 96), height: Math.min(height, 48), gap: 8 },
+  ];
+  for (const option of options) {
+    if (!(option.width >= 48) || !(option.height >= 48)) continue;
+    const pos = placeDodger({
+      width: option.width,
+      height: option.height,
+      bounds,
+      obstacles,
+      gap: option.gap,
+      previous,
+      minTravel,
+    });
+    const mover = { x: pos.x, y: pos.y, width: option.width, height: option.height };
+    const inside = pos.x >= bounds.left - 0.01
+      && pos.y >= bounds.top - 0.01
+      && pos.x + option.width <= bounds.right + 0.01
+      && pos.y + option.height <= bounds.bottom + 0.01;
+    const clear = obstacles.every((obstacle) => !rectsOverlap(mover, obstacle, option.gap));
+    if (!inside || !clear) continue;
+    button.style.minWidth = "0";
+    button.style.minHeight = "0";
+    button.style.width = `${option.width}px`;
+    button.style.height = `${option.height}px`;
+    button.style.left = `${pos.x}px`;
+    button.style.top = `${pos.y}px`;
+    return true;
+  }
+  const x = Math.min(Math.max(previous.x, bounds.left), Math.max(bounds.left, bounds.right - width));
+  const y = Math.min(Math.max(previous.y, bounds.top), Math.max(bounds.top, bounds.bottom - height));
+  button.style.width = `${width}px`;
+  button.style.height = `${height}px`;
+  button.style.left = `${x}px`;
+  button.style.top = `${y}px`;
+  return false;
+}
+
 function jump(button) {
   const before = button.getBoundingClientRect();
   detach(button);
-  const bounds = viewportBounds();
-  let width = button.offsetWidth || before.width;
-  let height = button.offsetHeight || before.height;
-  const maxWidth = bounds.right - bounds.left;
-  const maxHeight = bounds.bottom - bounds.top;
-  if (width > maxWidth && maxWidth > 0) {
-    width = maxWidth;
-    button.style.width = `${width}px`;
-  }
-  if (height > maxHeight && maxHeight > 0) {
-    height = maxHeight;
-    button.style.height = `${height}px`;
-  }
-  const pos = placeDodger({
-    width,
-    height,
-    bounds,
-    obstacles: obstacleRects(button),
-    gap: GAP,
-    previous: { x: before.left, y: before.top },
-    minTravel: MIN_TRAVEL,
-  });
-  button.style.left = `${pos.x}px`;
-  button.style.top = `${pos.y}px`;
+  placeClear(button, { x: before.left, y: before.top }, MIN_TRAVEL);
 }
 
 function reclamp(button) {
@@ -104,17 +129,7 @@ function reclamp(button) {
     }
     return;
   }
-  const pos = placeDodger({
-    width,
-    height,
-    bounds,
-    obstacles: obstacleRects(button),
-    gap: GAP,
-    previous: { x: box.left, y: box.top },
-    minTravel: 0,
-  });
-  button.style.left = `${pos.x}px`;
-  button.style.top = `${pos.y}px`;
+  placeClear(button, { x: box.left, y: box.top }, 0);
 }
 
 function announce(text) {
@@ -140,6 +155,16 @@ function bindDodger(button) {
   let shield = false;
   let leaving = false;
   let shieldTimer = 0;
+  let ignoreClick = false;
+  let ignoreTimer = 0;
+
+  const markGesture = () => {
+    ignoreClick = true;
+    window.clearTimeout(ignoreTimer);
+    ignoreTimer = window.setTimeout(() => {
+      ignoreClick = false;
+    }, 500);
+  };
 
   const armShield = () => {
     shield = true;
@@ -170,6 +195,7 @@ function bindDodger(button) {
       if (!event.isPrimary) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
       event.preventDefault();
+      markGesture();
       armShield();
       press();
     },
@@ -180,6 +206,16 @@ function bindDodger(button) {
     if (event.repeat) return;
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
+    markGesture();
+    press();
+  });
+
+  button.addEventListener("click", (event) => {
+    if (ignoreClick) {
+      ignoreClick = false;
+      event.preventDefault();
+      return;
+    }
     press();
   });
 
