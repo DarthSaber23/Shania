@@ -275,6 +275,20 @@ h1 {
     #ffd0de;
 }
 
+.player-caption {
+  margin: 0.55rem 0 0;
+  font-size: 0.92rem;
+}
+
+.player-caption a {
+  color: var(--yes);
+  font-weight: 700;
+}
+
+.player-frame[data-view="fallback"] ~ .player-caption {
+  display: none;
+}
+
 .choices {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -382,9 +382,6 @@ function mountCelebrationVideo(root) {
     started = true;
     try {
       const vars = playerVars();
-      if (window.location.protocol === "http:" || window.location.protocol === "https:") {
-        vars.origin = window.location.origin;
-      }
       new window.YT.Player(slot, {
         videoId: root.dataset.video || VIDEO_ID,
         host: NOCOOKIE_HOST,
@@ -404,7 +401,7 @@ function mountCelebrationVideo(root) {
           },
           onError: (event) => {
             window.clearTimeout(apiTimer);
-            window.clearTimeout(playTimer);
+            if (event.data !== 101 && event.data !== 150) window.clearTimeout(playTimer);
             dispatch({ type: "embed-error", code: Number(event.data) });
           },
         },

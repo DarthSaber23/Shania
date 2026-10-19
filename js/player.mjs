@@ -55,6 +55,11 @@ export function reducePlayer(session, event) {
   const next = { ...session };
   let action = null;
 
+  if (event.type === "embed-error" && (event.code === 101 || event.code === 150)) {
+    if (next.view !== "fallback") next.view = "playing";
+    return { session: next, action };
+  }
+
   if (event.type === "api-failed" || event.type === "embed-error") {
     next.view = "fallback";
     next.failure = event.type;

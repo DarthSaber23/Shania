@@ -91,9 +91,13 @@ test("a ready player tries sound, then muted playback, then a tap", () => {
 });
 
 test("embed errors, a dead API, and a missed API show the watch link", () => {
-  for (const code of [2, 5, 100, 101, 150, 999]) {
+  for (const code of [2, 5, 100, 999]) {
     const failed = viewAfter([{ type: "embed-error", code }]);
     assert.equal(failed.session.view, "fallback", `code ${code}`);
+  }
+  for (const code of [101, 150]) {
+    const revealed = viewAfter([{ type: "embed-error", code }]);
+    assert.equal(revealed.session.view, "playing", `code ${code} keeps the player visible`);
   }
   assert.equal(viewAfter([{ type: "api-failed" }]).session.view, "fallback");
   const late = viewAfter([{ type: "timeout", reason: "api" }]);
@@ -115,7 +119,7 @@ test("a late API still tries to play, and an embed error does not", () => {
   assert.equal(late.action, "play-unmuted");
 
   const denied = viewAfter([
-    { type: "embed-error", code: 101 },
+    { type: "embed-error", code: 100 },
     { type: "api-ready" },
   ]);
   assert.equal(denied.session.view, "fallback");
@@ -146,7 +150,7 @@ test("a thrown mute read keeps the sound prompt, and an embed error stays put", 
     throw new Error("volume unavailable");
   }), true);
   const stuck = viewAfter([
-    { type: "embed-error", code: 150 },
+    { type: "embed-error", code: 100 },
     { type: "state", playing: true, muted: false },
   ]);
   assert.equal(stuck.session.view, "fallback");

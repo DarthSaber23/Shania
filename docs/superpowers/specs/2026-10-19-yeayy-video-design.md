@@ -33,7 +33,8 @@ Views:
 | `playing` | Player state is playing and not muted | Veil hidden, YouTube controls usable |
 | `tap-for-sound` | Playing while muted | Video visible and a rose “Tap for sound” control |
 | `tap-to-play` | Player exists, no embed error, still not playing after the muted attempt | Rose veil and a “Tap to play” button |
-| `fallback` | API script fails, API never arrives, or player error 2, 5, 100, 101, or 150 | Copy plus a link to `https://www.youtube.com/watch?v=tt6FPKyQamk` |
+| `fallback` | API script fails, API never arrives, or player error 2, 5, or 100 | Copy plus a link to `https://www.youtube.com/watch?v=tt6FPKyQamk` |
+| `playing` | Unmuted playback, or player error 101 or 150 | The YouTube frame stays visible. Those two codes also arrive while a playable embed is on screen, so covering the frame would hide the clip. A quiet watch link sits under the frame. |
 
 The frame’s first paint is the rose surface and “Getting the video ready…”, already in the HTML, so the box is never empty while the module starts. The same watch link lives in that HTML, hidden until the view is `fallback`, and again inside `<noscript>` (with a style that hides the loading veil) so a browser with scripts disabled still has the link.
 
