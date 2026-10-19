@@ -61,6 +61,7 @@ test("styles respect safe areas, reduced motion, and the phone width", () => {
   assert.match(css, /\.ask-name\s*\{[^}]*font-family:\s*Fraunces/);
   assert.match(css, /\.ask-name\s*\{[^}]*text-wrap:\s*balance/);
   assert.match(css, /\.ask-name\s*\{[^}]*font-size:\s*clamp\(1\.55rem,\s*7\.2vw,\s*2\.35rem\)/);
+  assert.match(css, /@media \(max-height:\s*500px\)\s*\{[\s\S]*?\.ask-name\s*\{[^}]*font-size:\s*1\.15rem/);
   assert.doesNotMatch(css, /100vw/);
   assert.doesNotMatch(css, /:hover[^{]*\{[^}]*?(left|top|transform:\s*translate)/s);
 });
