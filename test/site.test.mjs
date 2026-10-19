@@ -26,7 +26,10 @@ test("the question, the sure page, and the celebration say the right things", ()
   const index = read("index.html");
   const sure = read("sure.html");
   const yeayy = read("yeayy.html");
-  assert.match(index, /Shania, would you be my girlfriend\?/);
+  assert.match(index, /<title>Would you be my girlfriend\?<\/title>/);
+  assert.match(index, /class="ask-name"[^>]*>\s*Shania Dea Menany Soputan\s*</);
+  assert.match(index, /<h1>\s*Would you be my girlfriend\?\s*<\/h1>/);
+  assert.doesNotMatch(index, /Shania, would you be my girlfriend\?/);
   assert.match(index, /href="yeayy\.html"/);
   assert.match(index, /data-dodge="count"/);
   assert.match(index, /data-limit="5"/);
@@ -36,7 +39,9 @@ test("the question, the sure page, and the celebration say the right things", ()
   assert.match(sure, /Are you sure\?/);
   assert.match(sure, /data-dodge="endless"/);
   assert.match(sure, /href="index\.html"/);
-  assert.match(yeayy, /Yeayy!/);
+  assert.match(yeayy, /<h1>\s*Yeayy!\s*<\/h1>/);
+  assert.match(yeayy, /I'm so happyyy… I'm gonna die!/);
+  assert.doesNotMatch(yeayy, /I am so happy/);
   for (const html of [index, sure, yeayy]) {
     assert.match(html, /<main[\s>]/);
     assert.match(html, /css\/styles\.css/);
@@ -53,6 +58,9 @@ test("styles respect safe areas, reduced motion, and the phone width", () => {
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
   assert.match(css, /overflow-x:\s*clip/);
   assert.match(css, /min-height:\s*3\.5rem/);
+  assert.match(css, /\.ask-name\s*\{[^}]*font-family:\s*Fraunces/);
+  assert.match(css, /\.ask-name\s*\{[^}]*text-wrap:\s*balance/);
+  assert.match(css, /\.ask-name\s*\{[^}]*font-size:\s*clamp\(1\.55rem,\s*7\.2vw,\s*2\.35rem\)/);
   assert.doesNotMatch(css, /100vw/);
   assert.doesNotMatch(css, /:hover[^{]*\{[^}]*?(left|top|transform:\s*translate)/s);
 });
