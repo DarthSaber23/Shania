@@ -1,0 +1,305 @@
+@font-face {
+  font-family: Fraunces;
+  src: url("../fonts/fraunces-latin-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Nunito;
+  src: url("../fonts/nunito-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Nunito;
+  src: url("../fonts/nunito-latin-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --ink: #4a1524;
+  --muted: #6f3a4a;
+  --paper: #fff6f8;
+  --yes: #9f1239;
+  --yes-ink: #ffffff;
+  --no-ink: #9f1239;
+  --no-bg: #ffffff;
+  --blush: #ffd6e3;
+  --line: #c45b78;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  height: 100%;
+  overflow-x: clip;
+  overflow-y: clip;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+  background: var(--paper);
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    calc(1.15rem + env(safe-area-inset-top))
+    calc(1rem + env(safe-area-inset-right))
+    calc(1.15rem + env(safe-area-inset-bottom))
+    calc(1rem + env(safe-area-inset-left));
+  color: var(--ink);
+  background:
+    radial-gradient(120% 70% at 50% -8%, #ffe4ec 0%, transparent 58%),
+    radial-gradient(70% 48% at 100% 100%, #ffd0de 0%, transparent 52%),
+    radial-gradient(60% 42% at 0% 88%, #ffe8ef 0%, transparent 50%),
+    var(--paper);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+#safe-probe {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+.sky {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.float-heart {
+  position: absolute;
+  color: #e11d48;
+  opacity: 0.33;
+  line-height: 1;
+  animation: drift 7.5s ease-in-out infinite;
+}
+
+.h1 { left: 9%; top: 11%; font-size: 1.35rem; }
+.h2 { right: 12%; top: 16%; font-size: 2rem; animation-delay: -1.4s; }
+.h3 { left: 14%; bottom: 12%; font-size: 1.7rem; animation-delay: -2.6s; }
+.h4 { right: 16%; bottom: 18%; font-size: 1.2rem; animation-delay: -3.5s; }
+.h5 { left: 42%; top: 7%; font-size: 0.95rem; animation-delay: -4.2s; opacity: 0.22; }
+.h6 { right: 38%; bottom: 8%; font-size: 1.5rem; animation-delay: -5s; }
+
+.scene {
+  position: relative;
+  z-index: 1;
+  width: min(26rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  text-align: center;
+  padding: 1.2rem 1rem 1.15rem;
+  border-radius: 1.6rem;
+  background: rgba(255, 246, 248, 0.9);
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--yes);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0.4rem 0 0.65rem;
+  font-family: Fraunces, "Iowan Old Style", Palatino, Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(1.9rem, 8.6vw, 3.2rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+.note {
+  margin: 0 auto;
+  max-width: 22rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+
+.big-heart {
+  margin: 0 0 0.15rem;
+  color: var(--yes);
+  font-size: 3.1rem;
+  line-height: 1;
+}
+
+.choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  margin-top: 1.35rem;
+}
+
+.choice-spacer {
+  min-height: 3.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.2rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.btn.yes,
+.btn.yes:visited {
+  background: var(--yes);
+  color: var(--yes-ink);
+  border-color: var(--yes);
+  box-shadow: 0 6px 14px rgba(159, 18, 57, 0.16);
+}
+
+.btn.no,
+.btn.no:visited {
+  background: var(--no-bg);
+  color: var(--no-ink);
+  border-color: var(--line);
+}
+
+.btn:hover { filter: brightness(1.04); }
+
+.btn:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.btn:active { transform: scale(0.98); }
+
+.btn.is-fleeing {
+  position: fixed;
+  z-index: 6;
+  margin: 0;
+  touch-action: none;
+}
+
+.burst {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  top: -12%;
+  width: var(--size);
+  height: calc(var(--size) * 0.62);
+  border-radius: 2px;
+  animation: fall linear forwards;
+}
+
+.piece.heart {
+  width: auto;
+  height: auto;
+  font-size: var(--size);
+  line-height: 1;
+  background: transparent;
+}
+
+@keyframes drift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes fall {
+  to { transform: translate3d(var(--drift), 110dvh, 0) rotate(var(--spin)); }
+}
+
+@media (max-height: 700px) {
+  h1 { font-size: clamp(1.7rem, 7vw, 2.4rem); }
+  .note { font-size: 1rem; }
+  .scene { padding-block: 0.75rem; }
+  .choices { margin-top: 1rem; }
+  .big-heart { font-size: 2.4rem; }
+}
+
+@media (max-height: 500px) {
+  body { align-items: flex-start; }
+
+  h1 {
+    font-size: 1.55rem;
+    margin: 0.25rem 0 0.35rem;
+  }
+
+  .note { font-size: 0.98rem; }
+  .scene { padding: 0.6rem 0.9rem 0.7rem; }
+  .choices { margin-top: 0.7rem; }
+  .big-heart { font-size: 2rem; }
+}
+
+.sr-only {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .btn:active { transform: none; }
+}
+
+@media (forced-colors: active) {
+  .btn { border: 2px solid ButtonText; }
+  .btn.yes { background: ButtonText; color: ButtonFace; }
+}

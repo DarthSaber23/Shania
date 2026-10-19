@@ -1,0 +1,96 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import test from "node:test";
+
+const read = (path) => fs.readFileSync(path, "utf8");
+
+function contrast(hexA, hexB) {
+  const lin = (channel) => {
+    const c = channel / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const lum = (hex) => {
+    const n = Number.parseInt(hex.slice(1), 16);
+    const r = lin((n >> 16) & 255);
+    const g = lin((n >> 8) & 255);
+    const b = lin(n & 255);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const a = lum(hexA);
+  const b = lum(hexB);
+  const [hi, lo] = a > b ? [a, b] : [b, a];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+test("the question, the sure page, and the celebration say the right things", () => {
+  const index = read("index.html");
+  const sure = read("sure.html");
+  const yeayy = read("yeayy.html");
+  assert.match(index, /Shania, would you be my girlfriend\?/);
+  assert.match(index, /href="yeayy\.html"/);
+  assert.match(index, /data-dodge="count"/);
+  assert.match(index, /data-limit="5"/);
+  assert.match(index, /data-next="sure\.html"/);
+  assert.match(index, /viewport-fit=cover/);
+  assert.match(index, /manifest\.webmanifest/);
+  assert.match(sure, /Are you sure\?/);
+  assert.match(sure, /data-dodge="endless"/);
+  assert.match(sure, /href="index\.html"/);
+  assert.match(yeayy, /Yeayy!/);
+  for (const html of [index, sure, yeayy]) {
+    assert.match(html, /<main[\s>]/);
+    assert.match(html, /css\/styles\.css/);
+    assert.match(html, /js\/app\.mjs/);
+  }
+});
+
+test("styles respect safe areas, reduced motion, and the phone width", () => {
+  const css = read("css/styles.css");
+  assert.match(css, /env\(safe-area-inset-top\)/);
+  assert.match(css, /env\(safe-area-inset-right\)/);
+  assert.match(css, /env\(safe-area-inset-bottom\)/);
+  assert.match(css, /env\(safe-area-inset-left\)/);
+  assert.match(css, /prefers-reduced-motion:\s*reduce/);
+  assert.match(css, /overflow-x:\s*clip/);
+  assert.match(css, /min-height:\s*3\.5rem/);
+  assert.doesNotMatch(css, /100vw/);
+  assert.doesNotMatch(css, /:hover[^{]*\{[^}]*?(left|top|transform:\s*translate)/s);
+});
+
+test("palette pairs used for text clear WCAG AA", () => {
+  const css = read("css/styles.css");
+  const value = (name) => {
+    const match = css.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
+    assert.ok(match, `missing --${name}`);
+    return match[1];
+  };
+  assert.ok(contrast(value("ink"), value("paper")) >= 4.5);
+  assert.ok(contrast(value("muted"), value("paper")) >= 4.5);
+  assert.ok(contrast(value("yes-ink"), value("yes")) >= 4.5);
+  assert.ok(contrast(value("no-ink"), value("no-bg")) >= 4.5);
+});
+
+test("the dodge is driven by pointer and keys, not hover", () => {
+  const app = read("js/app.mjs");
+  assert.match(app, /pointerdown/);
+  assert.match(app, /visualViewport/);
+  assert.match(app, /prefers-reduced-motion/);
+  assert.match(app, /location\.assign/);
+  assert.doesNotMatch(app, /mouseenter|mouseover|onmouseenter/);
+});
+
+test("manifest and icons keep working in the rose palette", () => {
+  const manifest = JSON.parse(read("manifest.webmanifest"));
+  assert.equal(manifest.name, "For Shania");
+  assert.equal(manifest.short_name, "Shania");
+  assert.equal(manifest.theme_color, "#9f1239");
+  assert.equal(manifest.background_color, "#fff1f4");
+  assert.equal(manifest.start_url, "./");
+  assert.ok(manifest.icons.some((icon) => icon.src === "icon-192.png"));
+  assert.ok(manifest.icons.some((icon) => icon.src === "icon-512-maskable.png" && icon.purpose === "maskable"));
+  assert.equal(fs.existsSync(".nojekyll"), true);
+  for (const file of ["icon-180.png", "icon-192.png", "icon-512.png", "icon-512-maskable.png"]) {
+    const bytes = fs.readFileSync(file);
+    assert.equal(bytes.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", `${file} is not a png`);
+  }
+});
