@@ -1,12 +1,12 @@
 {
-  "name": "Shania",
+  "name": "For Shania",
   "short_name": "Shania",
-  "description": "A small static page published from the repository root.",
+  "description": "A little question for Shania.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f4efe7",
-  "theme_color": "#1c1915",
+  "background_color": "#fff1f4",
+  "theme_color": "#9f1239",
   "icons": [
     {
       "src": "icon-192.png",
