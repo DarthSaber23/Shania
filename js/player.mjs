@@ -29,6 +29,19 @@ export function playerVars() {
   };
 }
 
+export function mutedFromPlayer(isMuted) {
+  try {
+    return Boolean(isMuted());
+  } catch {
+    return true;
+  }
+}
+
+export function soundGestureFollowUp(view, unmuteThrew) {
+  if (view !== "tap-for-sound" || unmuteThrew) return null;
+  return { type: "state", playing: true, muted: false };
+}
+
 export function createPlayerSession() {
   return {
     view: "loading",
@@ -59,6 +72,7 @@ export function reducePlayer(session, event) {
   }
 
   if (event.type === "state") {
+    if (next.view === "fallback") return { session: next, action };
     if (event.playing && event.muted) next.view = "tap-for-sound";
     else if (event.playing) next.view = "playing";
     return { session: next, action };

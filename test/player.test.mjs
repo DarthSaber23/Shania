@@ -11,8 +11,10 @@ import {
   applyPlayerView,
   createPlayerSession,
   embedSrc,
+  mutedFromPlayer,
   playerVars,
   reducePlayer,
+  soundGestureFollowUp,
 } from "../js/player.mjs";
 
 test("the embed URL is the privacy host with inline autoplay", () => {
@@ -118,6 +120,36 @@ test("a late API still tries to play, and an embed error does not", () => {
   ]);
   assert.equal(denied.session.view, "fallback");
   assert.equal(denied.action, null);
+});
+
+test("tap for sound hides only after a successful unmute follow-up", () => {
+  const quiet = viewAfter([
+    { type: "api-ready" },
+    { type: "state", playing: true, muted: true },
+  ]);
+  assert.equal(quiet.session.view, "tap-for-sound");
+  const gesture = reducePlayer(quiet.session, { type: "user-play" });
+  assert.equal(gesture.session.view, "tap-for-sound");
+  assert.equal(gesture.action, "unmute-and-play");
+  assert.equal(soundGestureFollowUp("tap-to-play", false), null);
+  assert.equal(soundGestureFollowUp("tap-for-sound", true), null);
+  const follow = soundGestureFollowUp(gesture.session.view, false);
+  assert.deepEqual(follow, { type: "state", playing: true, muted: false });
+  const heard = reducePlayer(gesture.session, follow);
+  assert.equal(heard.session.view, "playing");
+});
+
+test("a thrown mute read keeps the sound prompt, and an embed error stays put", () => {
+  assert.equal(mutedFromPlayer(() => false), false);
+  assert.equal(mutedFromPlayer(() => true), true);
+  assert.equal(mutedFromPlayer(() => {
+    throw new Error("volume unavailable");
+  }), true);
+  const stuck = viewAfter([
+    { type: "embed-error", code: 150 },
+    { type: "state", playing: true, muted: false },
+  ]);
+  assert.equal(stuck.session.view, "fallback");
 });
 
 test("a settled view ignores later play timeouts", () => {

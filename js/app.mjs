@@ -9,8 +9,10 @@ import {
   VIDEO_ID,
   applyPlayerView,
   createPlayerSession,
+  mutedFromPlayer,
   playerVars,
   reducePlayer,
+  soundGestureFollowUp,
 } from "./player.mjs";
 
 const GAP = 16;
@@ -287,7 +289,16 @@ function prepareFrame(target) {
   if (!iframe) return;
   iframe.setAttribute("playsinline", "1");
   iframe.setAttribute("webkit-playsinline", "1");
-  iframe.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture");
+  const allow = new Set(
+    (iframe.getAttribute("allow") || "")
+      .split(";")
+      .map((part) => part.trim())
+      .filter(Boolean),
+  );
+  allow.add("autoplay");
+  allow.add("encrypted-media");
+  allow.add("picture-in-picture");
+  iframe.setAttribute("allow", [...allow].join("; "));
   iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
   iframe.title = "It's so fluffy I'm gonna die!";
 }
@@ -331,16 +342,33 @@ function mountCelebrationVideo(root) {
       schedulePlayTimeout();
       return;
     }
-    if (action === "unmute-and-play") {
-      player.unMute?.();
-      player.playVideo?.();
-    }
+        if (action === "unmute-and-play") {
+          const view = session.view;
+          let unmuteThrew = false;
+          try {
+            player.unMute?.();
+          } catch {
+            unmuteThrew = true;
+          }
+          try {
+            player.playVideo?.();
+          } catch {
+            // A paused player can still start on the next tap.
+          }
+          const follow = soundGestureFollowUp(view, unmuteThrew);
+          if (!follow) return;
+          window.setTimeout(() => {
+            if (session.view !== "tap-for-sound") return;
+            dispatch(follow);
+          }, 0);
+        }
   };
 
   const dispatch = (event) => {
     const result = reducePlayer(session, event);
     session = result.session;
     paint();
+    if (session.view !== "loading") window.clearTimeout(playTimer);
     runAction(result.action);
   };
 
@@ -371,12 +399,7 @@ function mountCelebrationVideo(root) {
           onStateChange: (event) => {
             player = event.target;
             const playing = event.data === 1;
-            let muted = false;
-            try {
-              muted = Boolean(event.target.isMuted()) || event.target.getVolume() === 0;
-            } catch {
-              muted = false;
-            }
+            const muted = mutedFromPlayer(() => event.target.isMuted());
             dispatch({ type: "state", playing, muted });
           },
           onError: (event) => {

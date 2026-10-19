@@ -114,6 +114,9 @@ test("the celebration page keeps a 16:9 inline player and no page CSP", () => {
   assert.match(app, /\[data-player\]/);
   assert.match(app, /playsinline/);
   assert.match(app, /webkit-playsinline/);
+  assert.match(app, /mutedFromPlayer\(/);
+  assert.match(app, /soundGestureFollowUp\(/);
+  assert.doesNotMatch(app, /getVolume/);
   const player = read("js/player.mjs");
   assert.match(player, /youtube-nocookie\.com/);
   assert.match(player, /playsinline/);
