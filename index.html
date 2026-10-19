@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1c1915">
+  <meta name="color-scheme" content="light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Shania">
+  <meta name="description" content="A small static page published from the root of this repository.">
+  <title>Shania</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <style>
+    :root {
+      --ink: #1c1915;
+      --cream: #f4efe7;
+      --muted: #5c564c;
+      --card: #fffdf8;
+      --line: #e4d8c6;
+      --accent: #7c3424;
+      --accent-ink: #fff8f3;
+      --canvas: #e5dccf;
+      --header: #1c1915;
+      --header-ink: #f4efe7;
+      --mark: #e7b5a4;
+      --scheme: light;
+      color-scheme: light;
+    }
+
+    html[data-palette="ink"] {
+      --ink: #f4efe7;
+      --cream: #1c1915;
+      --muted: #c4baae;
+      --card: #2a2622;
+      --line: #3f3832;
+      --accent: #e7b5a4;
+      --accent-ink: #1c1915;
+      --canvas: #0e0c0a;
+      --header: #141210;
+      --header-ink: #f4efe7;
+      --mark: #e7b5a4;
+      --scheme: dark;
+      color-scheme: dark;
+    }
+
+    html[data-palette="moss"] {
+      --ink: #1c2b24;
+      --cream: #eef2e6;
+      --muted: #4e5c52;
+      --card: #f8faf4;
+      --line: #d5deca;
+      --accent: #2f6b4f;
+      --accent-ink: #f4fff8;
+      --canvas: #dde5d4;
+      --header: #1c2b24;
+      --header-ink: #f3f6f1;
+      --mark: #d6e2a8;
+    }
+
+    html[data-palette="dusk"] {
+      --ink: #241c33;
+      --cream: #f6f0ea;
+      --muted: #5e5670;
+      --card: #fffaf6;
+      --line: #e6d9ea;
+      --accent: #7a3e6d;
+      --accent-ink: #fff7fb;
+      --canvas: #e7dfe8;
+      --header: #2a2140;
+      --header-ink: #f7f1ff;
+      --mark: #f0b7c8;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      overflow-x: clip;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      overflow-x: clip;
+      background: var(--cream);
+      color: var(--ink);
+      font-family: "Avenir Next", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    }
+
+    button, textarea, input {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      background: none;
+      border: 0;
+      padding: 0;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      cursor: pointer;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 32rem;
+      height: 100dvh;
+      margin: 0 auto;
+      background: var(--cream);
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex: none;
+      min-height: calc(3.5rem + env(safe-area-inset-top));
+      padding:
+        calc(0.85rem + env(safe-area-inset-top))
+        calc(1.15rem + env(safe-area-inset-right))
+        0.95rem
+        calc(1.15rem + env(safe-area-inset-left));
+      background: var(--header);
+      color: var(--header-ink);
+    }
+
+    .mark {
+      width: 1.65rem;
+      height: 0.22rem;
+      border-radius: 999px;
+      background: var(--mark);
+      flex: none;
+      transition: background 180ms ease, width 180ms ease;
+    }
+
+    .app-name {
+      font-size: 0.78rem;
+      font-weight: 650;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .here {
+      margin-left: auto;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mark);
+    }
+
+    main {
+      flex: 1;
+      min-height: 0;
+      overflow-x: clip;
+      overflow-y: auto;
+      padding:
+        1.25rem
+        calc(1.15rem + env(safe-area-inset-right))
+        1.25rem
+        calc(1.15rem + env(safe-area-inset-left));
+    }
+
+    h1 {
+      margin: 0.2rem 0 0.7rem;
+      font-family: "Iowan Old Style", Palatino, "Palatino Linotype", "Noto Serif", Georgia, serif;
+      font-size: clamp(3.1rem, 16vw, 4.6rem);
+      font-weight: 520;
+      letter-spacing: -0.035em;
+      line-height: 0.9;
+    }
+
+    h2 {
+      margin: 0 0 0.45rem;
+      font-family: "Iowan Old Style", Palatino, "Palatino Linotype", "Noto Serif", Georgia, serif;
+      font-size: clamp(1.7rem, 7vw, 2.15rem);
+      font-weight: 560;
+      letter-spacing: -0.03em;
+    }
+
+    p { margin: 0; }
+
+    .lead, .quiet {
+      color: var(--muted);
+      font-size: clamp(1.02rem, 4.2vw, 1.12rem);
+      line-height: 1.55;
+    }
+
+    .label {
+      margin: 1.35rem 0 0.65rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 650;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .panel[hidden] { display: none !important; }
+
+    .panel {
+      animation: rise 220ms ease;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .note-chip {
+      position: relative;
+      width: 100%;
+      min-height: 3.25rem;
+      margin-top: 1.15rem;
+      padding: 0.75rem 2.2rem 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.15rem;
+      text-align: left;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+    }
+
+    .note-chip::after {
+      content: "";
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      width: 0.45rem;
+      height: 0.45rem;
+      border-top: 2px solid var(--muted);
+      border-right: 2px solid var(--muted);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .note-chip[hidden] { display: none !important; }
+
+    .note-chip-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .note-chip-text {
+      font-size: 0.98rem;
+      line-height: 1.4;
+      color: var(--ink);
+    }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.55rem;
+    }
+
+    .swatch {
+      min-height: 4.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      border-radius: 1rem;
+      border: 1px solid var(--line);
+      background: var(--card);
+      font-size: 0.75rem;
+      font-weight: 650;
+    }
+
+    .swatch i {
+      width: 1.65rem;
+      height: 1.65rem;
+      border-radius: 999px;
+      display: block;
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+    }
+
+    .swatch[aria-pressed="true"] {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+
+    .swatch-paper i { background: #7c3424; }
+    .swatch-ink i { background: #e7b5a4; }
+    .swatch-moss i { background: #2f6b4f; }
+    .swatch-dusk i { background: #7a3e6d; }
+
+    textarea {
+      width: 100%;
+      min-height: 9.5rem;
+      margin-top: 0.9rem;
+      padding: 0.95rem 1rem;
+      resize: none;
+      border-radius: 1rem;
+      border: 1px solid var(--line);
+      background: var(--card);
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    textarea:focus-visible,
+    .primary:focus-visible,
+    .swatch:focus-visible,
+    .tab:focus-visible,
+    .note-chip:focus-visible,
+    .toast button:focus-visible {
+      outline: 3px solid var(--mark);
+      outline-offset: 2px;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-top: 0.55rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .size-row {
+      margin-top: 1.1rem;
+    }
+
+    .size-row label {
+      display: block;
+      margin-bottom: 0.2rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 650;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 2.75rem;
+      accent-color: var(--accent);
+    }
+
+    .primary {
+      width: 100%;
+      min-height: 3rem;
+      margin-top: 0.85rem;
+      padding: 0.85rem 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.95rem;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-size: 1.02rem;
+      font-weight: 650;
+    }
+
+    .primary:disabled {
+      opacity: 0.45;
+    }
+
+    .primary:active:not(:disabled),
+    .swatch:active,
+    .tab:active,
+    .note-chip:active {
+      transform: scale(0.985);
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2rem;
+      margin: 0.85rem 0 0.35rem;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      font-size: 0.85rem;
+      font-weight: 650;
+    }
+
+    .url {
+      width: 100%;
+      margin-top: 0.85rem;
+      padding: 0.85rem 1rem;
+      border-radius: 0.9rem;
+      border: 1px solid var(--line);
+      background: var(--card);
+      font-size: 0.92rem;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    ol {
+      margin: 0.9rem 0 0;
+      padding-left: 1.15rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    ol li + li { margin-top: 0.4rem; }
+
+    .tabs {
+      flex: none;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.15rem;
+      padding:
+        0.35rem
+        calc(0.4rem + env(safe-area-inset-right))
+        calc(0.35rem + env(safe-area-inset-bottom))
+        calc(0.4rem + env(safe-area-inset-left));
+      background: var(--card);
+      border-top: 1px solid var(--line);
+    }
+
+    .tab {
+      min-height: 3.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.8rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 650;
+    }
+
+    .tab[aria-selected="true"] {
+      color: var(--ink);
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+
+    .tab::after {
+      content: "";
+      width: 1.1rem;
+      height: 3px;
+      margin-top: 0.28rem;
+      border-radius: 999px;
+      background: transparent;
+    }
+
+    .tab[aria-selected="true"]::after {
+      background: var(--accent);
+    }
+
+    .toast {
+      position: absolute;
+      left: 0.8rem;
+      right: 0.8rem;
+      bottom: calc(4.6rem + env(safe-area-inset-bottom));
+      min-height: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.55rem 0.7rem 0.55rem 1rem;
+      border-radius: 1rem;
+      background: var(--header);
+      color: var(--header-ink);
+      box-shadow: 0 12px 30px rgba(20, 12, 8, 0.2);
+    }
+
+    .toast[hidden] { display: none !important; }
+
+    .toast button {
+      min-height: 2.75rem;
+      min-width: 4.5rem;
+      padding: 0 0.8rem;
+      border-radius: 0.7rem;
+      background: var(--mark);
+      color: #1c1915;
+      font-weight: 700;
+    }
+
+    .app { position: relative; }
+
+    @media (min-width: 760px) {
+      body { background: var(--canvas); }
+
+      .app {
+        height: calc(100dvh - 4rem);
+        min-height: 0;
+        margin: 2rem auto;
+        border-radius: 1.75rem;
+        overflow: hidden;
+        box-shadow: 0 24px 70px rgba(48, 30, 14, 0.14);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .panel, .mark, .primary, .swatch, .tab, .note-chip {
+        animation: none;
+        transition: none;
+      }
+    }
+  </style>
+  <script>
+    try {
+      var savedPalette = localStorage.getItem("shania-palette");
+      if (savedPalette) document.documentElement.dataset.palette = savedPalette;
+    } catch (error) {}
+  </script>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <span class="mark" aria-hidden="true"></span>
+      <span class="app-name">Shania</span>
+      <span class="here" id="here">Home</span>
+    </header>
+    <main>
+      <section class="panel" id="panel-home" role="tabpanel" aria-labelledby="tab-home">
+        <h1>Shania</h1>
+        <p class="lead">A small static page, published from the root of this repository. No build step — just this file, served by GitHub Pages.</p>
+        <button class="note-chip" id="note-chip" type="button" hidden>
+          <span class="note-chip-label">Saved note</span>
+          <span class="note-chip-text" id="note-chip-text"></span>
+        </button>
+        <p class="label" id="color-label">Color</p>
+        <div class="swatches" role="group" aria-labelledby="color-label">
+          <button class="swatch swatch-paper" type="button" data-palette="paper" aria-pressed="true"><i aria-hidden="true"></i>Paper</button>
+          <button class="swatch swatch-ink" type="button" data-palette="ink" aria-pressed="false"><i aria-hidden="true"></i>Ink</button>
+          <button class="swatch swatch-moss" type="button" data-palette="moss" aria-pressed="false"><i aria-hidden="true"></i>Moss</button>
+          <button class="swatch swatch-dusk" type="button" data-palette="dusk" aria-pressed="false"><i aria-hidden="true"></i>Dusk</button>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-note" role="tabpanel" aria-labelledby="tab-note" hidden>
+        <h2>A note</h2>
+        <p class="quiet">Kept in this browser only. It stays when you leave and come back.</p>
+        <label class="label" for="note">Your note</label>
+        <textarea id="note" maxlength="2000" placeholder="Write something worth keeping."></textarea>
+        <div class="meta">
+          <span id="count">0 characters</span>
+          <span id="saved">Empty</span>
+        </div>
+        <div class="size-row">
+          <label for="size">Type size</label>
+          <input id="size" type="range" min="16" max="28" step="1" value="18">
+        </div>
+        <button class="primary" id="clear" type="button" disabled>Clear note</button>
+      </section>
+
+      <section class="panel" id="panel-about" role="tabpanel" aria-labelledby="tab-about" hidden>
+        <h2>About this page</h2>
+        <p class="quiet">Static HTML at the repository root. The static GitHub Pages workflow publishes this folder when main changes.</p>
+        <p class="quiet" style="margin-top: 0.8rem">The tabs, note, and colors run in the page itself. Nothing is sent to a server.</p>
+        <button class="primary" id="open-install" type="button">Add to Home Screen</button>
+      </section>
+
+      <section class="panel" id="panel-install" role="tabpanel" aria-labelledby="tab-install" hidden>
+        <h2>Add to Home Screen</h2>
+        <p class="status" id="install-state">In the browser</p>
+        <p class="quiet">Open the share menu and choose Add to Home Screen. The name and icon come from the web app manifest.</p>
+        <p class="url" id="page-url"></p>
+        <button class="primary" id="copy" type="button">Copy link</button>
+        <ol>
+          <li>Open this page in Safari or Chrome.</li>
+          <li>Choose Add to Home Screen.</li>
+          <li>Open Shania from the icon. It fills the phone.</li>
+        </ol>
+      </section>
+    </main>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" id="tab-home" type="button" role="tab" aria-selected="true" aria-controls="panel-home">Home</button>
+      <button class="tab" id="tab-note" type="button" role="tab" aria-selected="false" aria-controls="panel-note" tabindex="-1">Note</button>
+      <button class="tab" id="tab-about" type="button" role="tab" aria-selected="false" aria-controls="panel-about" tabindex="-1">About</button>
+      <button class="tab" id="tab-install" type="button" role="tab" aria-selected="false" aria-controls="panel-install" tabindex="-1">Install</button>
+    </nav>
+    <div class="toast" id="toast" hidden role="status">
+      <span id="toast-text"></span>
+      <button id="toast-action" type="button" hidden>Undo</button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var themes = { paper: "#1c1915", ink: "#141210", moss: "#1c2b24", dusk: "#2a2140" };
+      var names = { home: "Home", note: "Note", about: "About", install: "Install" };
+      var order = ["home", "note", "about", "install"];
+      var noteKey = "shania-note";
+      var sizeKey = "shania-size";
+      var paletteKey = "shania-palette";
+      var note = document.getElementById("note");
+      var count = document.getElementById("count");
+      var saved = document.getElementById("saved");
+      var clear = document.getElementById("clear");
+      var size = document.getElementById("size");
+      var chip = document.getElementById("note-chip");
+      var chipText = document.getElementById("note-chip-text");
+      var here = document.getElementById("here");
+      var toast = document.getElementById("toast");
+      var toastText = document.getElementById("toast-text");
+      var toastAction = document.getElementById("toast-action");
+      var themeMeta = document.querySelector('meta[name="theme-color"]');
+      var schemeMeta = document.querySelector('meta[name="color-scheme"]');
+      var toastTimer = 0;
+      var undoValue = "";
+
+      function read(key) {
+        try { return localStorage.getItem(key); } catch (error) { return null; }
+      }
+
+      function write(key, value) {
+        try { localStorage.setItem(key, value); } catch (error) {}
+      }
+
+      function remove(key) {
+        try { localStorage.removeItem(key); } catch (error) {}
+      }
+
+      function showToast(message, undo) {
+        toastText.textContent = message;
+        toast.hidden = false;
+        if (undo) {
+          undoValue = undo;
+          toastAction.hidden = false;
+        } else {
+          undoValue = "";
+          toastAction.hidden = true;
+        }
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(function () { toast.hidden = true; }, 3600);
+      }
+
+      function applyPalette(name) {
+        if (!themes[name]) name = "paper";
+        if (name === "paper") delete document.documentElement.dataset.palette;
+        else document.documentElement.dataset.palette = name;
+        themeMeta.setAttribute("content", themes[name]);
+        var dark = name === "ink";
+        schemeMeta.setAttribute("content", dark ? "dark" : "light");
+        document.querySelectorAll(".swatch").forEach(function (button) {
+          button.setAttribute("aria-pressed", button.dataset.palette === name ? "true" : "false");
+        });
+        write(paletteKey, name);
+      }
+
+      function preview() {
+        var text = note.value.trim();
+        clear.disabled = note.value.length === 0;
+        count.textContent = note.value.length + (note.value.length === 1 ? " character" : " characters");
+        if (!text) {
+          chip.hidden = true;
+          chipText.textContent = "";
+          return;
+        }
+        chip.hidden = false;
+        chipText.textContent = text.length > 84 ? text.slice(0, 84) + "…" : text;
+      }
+
+      function applySize(value) {
+        var next = Math.min(28, Math.max(16, Number(value) || 18));
+        size.value = String(next);
+        note.style.fontSize = next + "px";
+        write(sizeKey, String(next));
+      }
+
+      function show(name) {
+        if (order.indexOf(name) === -1) name = "home";
+        order.forEach(function (id) {
+          var on = id === name;
+          document.getElementById("panel-" + id).hidden = !on;
+          var tab = document.getElementById("tab-" + id);
+          tab.setAttribute("aria-selected", on ? "true" : "false");
+          tab.tabIndex = on ? 0 : -1;
+        });
+        here.textContent = names[name];
+        if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+        if (name === "note" && !note.value) note.focus({ preventScroll: true });
+      }
+
+      document.querySelector(".tabs").addEventListener("click", function (event) {
+        var tab = event.target.closest(".tab");
+        if (tab) show(tab.id.replace("tab-", ""));
+      });
+
+      document.querySelector(".tabs").addEventListener("keydown", function (event) {
+        var current = document.activeElement;
+        if (!current || !current.classList.contains("tab")) return;
+        var index = order.indexOf(current.id.replace("tab-", ""));
+        var next = index;
+        if (event.key === "ArrowRight") next = (index + 1) % order.length;
+        else if (event.key === "ArrowLeft") next = (index + order.length - 1) % order.length;
+        else return;
+        event.preventDefault();
+        var tab = document.getElementById("tab-" + order[next]);
+        tab.focus();
+        show(order[next]);
+      });
+
+      document.querySelector(".swatches").addEventListener("click", function (event) {
+        var swatch = event.target.closest(".swatch");
+        if (!swatch) return;
+        applyPalette(swatch.dataset.palette);
+        showToast(swatch.dataset.palette.charAt(0).toUpperCase() + swatch.dataset.palette.slice(1) + " color");
+      });
+
+      chip.addEventListener("click", function () { show("note"); });
+      document.getElementById("open-install").addEventListener("click", function () { show("install"); });
+
+      note.addEventListener("input", function () {
+        write(noteKey, note.value);
+        saved.textContent = note.value ? "Saved on this phone" : "Empty";
+        preview();
+      });
+
+      size.addEventListener("input", function () { applySize(size.value); });
+
+      clear.addEventListener("click", function () {
+        if (!note.value) return;
+        var previous = note.value;
+        note.value = "";
+        remove(noteKey);
+        saved.textContent = "Empty";
+        preview();
+        showToast("Note cleared", previous);
+      });
+
+      toastAction.addEventListener("click", function () {
+        if (!undoValue) return;
+        note.value = undoValue;
+        write(noteKey, note.value);
+        saved.textContent = "Saved on this phone";
+        preview();
+        toast.hidden = true;
+        show("note");
+      });
+
+      document.getElementById("copy").addEventListener("click", function () {
+        var url = location.href.split("#")[0];
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function () {
+            showToast("Link copied");
+          }).catch(function () {
+            showToast("Select the link and copy it");
+          });
+        } else {
+          showToast("Select the link and copy it");
+        }
+      });
+
+      var storedNote = read(noteKey) || "";
+      note.value = storedNote;
+      saved.textContent = storedNote ? "Saved on this phone" : "Empty";
+      preview();
+      applySize(read(sizeKey) || 18);
+      applyPalette(read(paletteKey) || document.documentElement.dataset.palette || "paper");
+
+      var standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+      document.getElementById("install-state").textContent = standalone ? "On your home screen" : "In the browser";
+      document.getElementById("page-url").textContent = location.href.split("#")[0];
+
+      var initial = (location.hash || "#home").slice(1);
+      show(order.indexOf(initial) === -1 ? "home" : initial);
+    })();
+  </script>
+</body>
+</html>
