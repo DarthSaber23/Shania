@@ -1,6 +1,6 @@
 import { buildConfetti } from "./celebrate.mjs";
 import { nextRefusal, placeDodger, rectsOverlap } from "./dodge.mjs";
-import { createNotifier } from "./notify.mjs";
+import { browserStorage, createNotifier } from "./notify.mjs";
 
 const GAP = 16;
 const MARGIN = 8;
@@ -273,6 +273,7 @@ function startCelebration() {
 }
 
 function safeNotifier() {
+  const storage = browserStorage();
   try {
     const fetchImpl = typeof globalThis.fetch === "function"
       ? globalThis.fetch.bind(globalThis)
@@ -280,11 +281,7 @@ function safeNotifier() {
     const beacon = typeof globalThis.navigator?.sendBeacon === "function"
       ? globalThis.navigator.sendBeacon.bind(globalThis.navigator)
       : undefined;
-    return createNotifier({
-      fetchImpl,
-      beacon,
-      storage: globalThis.sessionStorage,
-    });
+    return createNotifier({ fetchImpl, beacon, storage });
   } catch {
     return null;
   }

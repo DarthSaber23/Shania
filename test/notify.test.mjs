@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { TOPIC, createNotifier, messageFor, requestUrl } from "../js/notify.mjs";
+import { TOPIC, browserStorage, createNotifier, messageFor, requestUrl } from "../js/notify.mjs";
 
 const AT = new Date("2026-10-19T16:51:00.000Z");
 const TIME = "19 Oct, 23:51 WIB";
@@ -35,7 +35,7 @@ function harness(options = {}) {
       beacons.push({ url, body });
       return true;
     },
-    storage: options.storage || memoryStorage(),
+    storage: Object.hasOwn(options, "storage") ? options.storage : memoryStorage(),
     now: () => options.at || AT,
     clock: () => clockValue,
   });
@@ -210,6 +210,47 @@ test("a rejected fetch does not throw", async () => {
   });
   assert.doesNotThrow(() => notifier.onSureLoad());
   await new Promise((resolve) => setImmediate(resolve));
+});
+
+test("a missing fetch uses sendBeacon", () => {
+  const beacons = [];
+  const notifier = createNotifier({
+    beacon: (url, body) => {
+      beacons.push({ url, body });
+      return true;
+    },
+    storage: memoryStorage(),
+    now: () => AT,
+  });
+  notifier.onSureLoad();
+  assert.equal(beacons.length, 1);
+  assert.equal(beacons[0].body, `Shania reached Are you sure? · ${TIME}`);
+});
+
+test("blocked sessionStorage still publishes events that do not need to cross a page", () => {
+  const global = {
+    sessionStorage: {
+      getItem() {
+        throw new Error("blocked");
+      },
+      setItem() {
+        throw new Error("blocked");
+      },
+    },
+  };
+  assert.equal(browserStorage(global), undefined);
+  const box = harness({ storage: undefined });
+  box.notifier.onAskLoad();
+  box.notifier.onNoTap(1, 5);
+  box.notifier.onSureLoad();
+  assert.deepEqual(
+    box.calls.map((call) => posted(call).body),
+    [
+      `Shania opened the page 👀 · ${TIME}`,
+      `Shania tapped NO (1/5) · ${TIME}`,
+      `Shania reached Are you sure? · ${TIME}`,
+    ],
+  );
 });
 
 test("a throwing fetch falls back to sendBeacon and stays quiet", () => {

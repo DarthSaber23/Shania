@@ -62,6 +62,16 @@ export function requestUrl(topic, kind) {
   return `${topic}?${params.toString()}`;
 }
 
+export function browserStorage(global = globalThis) {
+  try {
+    const storage = global.sessionStorage;
+    storage.getItem(OPENED);
+    return storage;
+  } catch {
+    return undefined;
+  }
+}
+
 function read(storage, key) {
   try {
     return storage?.getItem(key) ?? null;
