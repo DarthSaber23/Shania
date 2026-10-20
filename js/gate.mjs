@@ -416,10 +416,12 @@ export function mountGate({
     watching = false;
     opened = false;
     controller.stop();
-    try {
-      onLock?.();
-    } catch {
-      // Stopping the video must not leave the page visible.
+    if (booted) {
+      try {
+        onLock?.();
+      } catch {
+        // Stopping the video must not leave the page visible.
+      }
     }
     html.classList.add("is-gated");
     html.classList.remove("is-verified", "has-code");
@@ -451,11 +453,11 @@ export function mountGate({
 
   const onActivity = () => {
     if (!watching) return;
+    if (documentRef.visibilityState === "hidden") return;
     controller.noteActivity();
   };
   for (const type of ACTIVITY_EVENTS) {
     documentRef.addEventListener(type, onActivity, { capture: true, passive: true });
-    view.addEventListener?.(type, onActivity, { capture: true, passive: true });
   }
   documentRef.addEventListener("visibilitychange", () => {
     if (!watching) return;

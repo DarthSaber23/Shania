@@ -14,8 +14,8 @@ import {
   mutedFromPlayer,
   playerVars,
   reducePlayer,
+  createPlaybackLock,
   soundGestureFollowUp,
-  stopYouTube,
 } from "./player.mjs";
 
 const GAP = 16;
@@ -361,25 +361,21 @@ function bootNotifier(notify) {
 }
 
 const notifier = safeNotifier();
+const playback = createPlaybackLock();
 let celebrationPlayer = null;
-let videoLocked = false;
-let stopRequested = false;
 
-function stopCelebrationVideo() {
-  videoLocked = true;
-  if (stopRequested) return;
-  stopRequested = true;
+function playerPostMessage() {
   const iframe = document.querySelector("[data-player-frame] iframe, [data-player] iframe");
   const target = iframe?.contentWindow;
-  stopYouTube({
-    player: celebrationPlayer,
-    postMessage: target ? target.postMessage.bind(target) : undefined,
-  });
+  return target ? target.postMessage.bind(target) : undefined;
+}
+
+function stopCelebrationVideo() {
+  playback.lock(celebrationPlayer, playerPostMessage());
 }
 
 function allowCelebrationVideo() {
-  videoLocked = false;
-  stopRequested = false;
+  playback.unlock();
 }
 
 window.addEventListener("pageshow", (event) => {
@@ -431,7 +427,7 @@ function mountCelebrationVideo(root) {
   };
 
   const runAction = (action) => {
-    if (!player || !action) return;
+    if (playback.isLocked() || !player || !action) return;
     if (action === "play-unmuted") {
       player.unMute?.();
       player.playVideo?.();
@@ -467,6 +463,11 @@ function mountCelebrationVideo(root) {
   };
 
   const dispatch = (event) => {
+    if (playback.isLocked()) {
+      window.clearTimeout(playTimer);
+      window.clearTimeout(apiTimer);
+      return;
+    }
     const result = reducePlayer(session, event);
     session = result.session;
     paint();
@@ -494,19 +495,13 @@ function mountCelebrationVideo(root) {
             player = event.target;
             celebrationPlayer = player;
             prepareFrame(player);
-            if (videoLocked) {
-              stopCelebrationVideo();
-              return;
-            }
+            if (playback.beforePlay(player, playerPostMessage()) === "stopped") return;
             dispatch({ type: "api-ready" });
           },
           onStateChange: (event) => {
             player = event.target;
             celebrationPlayer = player;
-            if (videoLocked) {
-              stopCelebrationVideo();
-              return;
-            }
+            if (playback.beforePlay(event.target, playerPostMessage()) === "stopped") return;
             const playing = event.data === 1;
             const muted = mutedFromPlayer(() => event.target.isMuted());
             dispatch({ type: "state", playing, muted });

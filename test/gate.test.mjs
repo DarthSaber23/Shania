@@ -390,7 +390,9 @@ test("the three pages share the gate and boot the old flow only after unlock", (
   assert.match(app, /onUnlock:\s*bootExperience/);
   assert.match(app, /onLock:\s*stopCelebrationVideo/);
   assert.match(app, /onResume:\s*allowCelebrationVideo/);
-  assert.match(app, /stopYouTube/);
+  assert.match(app, /createPlaybackLock/);
+  assert.match(app, /playback\.beforePlay/);
+  assert.match(app, /playback\.isLocked/);
   assert.match(gate, /Sesi kamu habis, minta kode baru ya 😊/);
   for (const file of ["index.html", "sure.html", "yeayy.html"]) {
     const html = fs.readFileSync(file, "utf8");
@@ -800,6 +802,61 @@ test("entering a new code after expiry resumes the page once", async () => {
   assert.equal(resumed, 1);
   assert.equal(page.html.classList.contains("is-verified"), true);
   assert.equal(page.expired.hidden, true);
+});
+
+test("an already expired visit does not arm the player lock", () => {
+  const page = mountDocument();
+  const storage = memoryStorage({
+    "shania.gate.verified": "1",
+    "shania.gate.session": JSON.stringify({ verifiedAt: 0, lastActivityAt: 0 }),
+  });
+  let locked = 0;
+  let unlocked = 0;
+  mountGate({
+    documentRef: page.documentRef,
+    storage,
+    now: () => 60 * 60 * 1000,
+    date: () => AT,
+    fetchImpl: async () => ({ ok: true }),
+    onLock() {
+      locked += 1;
+    },
+    onUnlock() {
+      unlocked += 1;
+    },
+  });
+  assert.equal(locked, 0);
+  assert.equal(unlocked, 0);
+  assert.equal(page.html.classList.contains("is-gated"), true);
+  assert.equal(page.expired.textContent, COPY.expired);
+  assert.equal(storage.dump()["shania.gate.verified"], undefined);
+});
+
+test("a scroll while the phone is locked does not refresh the idle clock", () => {
+  const page = mountDocument({ search: "?inactivityMs=1000&absoluteMs=60000" });
+  const storage = memoryStorage({
+    "shania.gate.verified": "1",
+    "shania.gate.session": JSON.stringify({ verifiedAt: 1_000_000, lastActivityAt: 1_000_000 }),
+  });
+  let locked = 0;
+  mountGate({
+    documentRef: page.documentRef,
+    storage,
+    now: page.now,
+    date: () => AT,
+    fetchImpl: async () => ({ ok: true }),
+    onLock() {
+      locked += 1;
+    },
+  });
+  page.pass(800);
+  page.documentRef.visibilityState = "hidden";
+  page.dispatch("scroll");
+  page.pass(300);
+  page.documentRef.visibilityState = "visible";
+  page.dispatch("visibilitychange");
+  assert.equal(locked, 1);
+  assert.equal(page.expired.textContent, COPY.expired);
 });
 
 test("the activity listeners cover touch, pointer, keys, scroll, and click", () => {

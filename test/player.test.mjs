@@ -14,6 +14,7 @@ import {
   mutedFromPlayer,
   playerVars,
   reducePlayer,
+  createPlaybackLock,
   soundGestureFollowUp,
   stopYouTube,
 } from "../js/player.mjs";
@@ -230,6 +231,35 @@ test("stopYouTube pauses, stops, and posts the iframe command", () => {
     func: "stopVideo",
     args: "",
   });
+});
+
+test("a lock stops the player now and again when it becomes ready", () => {
+  const calls = [];
+  const player = {
+    pauseVideo() {
+      calls.push("pause");
+    },
+    stopVideo() {
+      calls.push("stop");
+    },
+    playVideo() {
+      calls.push("play");
+    },
+  };
+  const post = () => calls.push("post");
+  const playback = createPlaybackLock();
+  assert.equal(playback.beforePlay(player, post), "play");
+  assert.deepEqual(calls, []);
+  playback.lock(null, post);
+  assert.equal(playback.isLocked(), true);
+  assert.deepEqual(calls, ["post"]);
+  assert.equal(playback.beforePlay(player, post), "stopped");
+  assert.deepEqual(calls, ["post", "pause", "stop", "post"]);
+  assert.equal(playback.beforePlay(player, post), "stopped");
+  playback.unlock();
+  assert.equal(playback.isLocked(), false);
+  assert.equal(playback.beforePlay(player, post), "play");
+  assert.deepEqual(calls.filter((call) => call === "play"), []);
 });
 
 test("stopYouTube still posts the command when the player throws", () => {
