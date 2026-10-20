@@ -88,6 +88,40 @@ test("the dodge is driven by pointer and keys, not hover", () => {
   assert.doesNotMatch(app, /mouseenter|mouseover|onmouseenter/);
 });
 
+test("the celebration page keeps a 16:9 inline player and no page CSP", () => {
+  const index = read("index.html");
+  const sure = read("sure.html");
+  const yeayy = read("yeayy.html");
+  const css = read("css/styles.css");
+  const app = read("js/app.mjs");
+  assert.match(yeayy, /I'm so happyyy… I'm gonna die![\s\S]*data-player/);
+  assert.match(yeayy, /data-video="tt6FPKyQamk"/);
+  assert.match(yeayy, /https:\/\/www\.youtube\.com\/watch\?v=tt6FPKyQamk/);
+  assert.match(yeayy, /<noscript>[\s\S]*watch\?v=tt6FPKyQamk/);
+  assert.match(yeayy, /Getting the video ready/);
+  assert.match(yeayy, /Tap to play/);
+  assert.doesNotMatch(index, /data-player/);
+  assert.doesNotMatch(sure, /data-player/);
+  for (const html of [index, sure, yeayy]) {
+    assert.doesNotMatch(html, /Content-Security-Policy/i);
+  }
+  assert.match(css, /\.player-frame\s*\{[^}]*aspect-ratio:\s*16\s*\/\s*9/);
+  assert.match(css, /\.player-frame\s*\{[^}]*border-radius:\s*1\.15rem/);
+  assert.match(css, /46dvh \* 16 \/ 9/);
+  assert.match(css, /\[data-view="tap-for-sound"\]/);
+  assert.match(css, /\[data-view="tap-to-play"\]/);
+  assert.match(app, /startCelebration\(/);
+  assert.match(app, /\[data-player\]/);
+  assert.match(app, /playsinline/);
+  assert.match(app, /webkit-playsinline/);
+  assert.match(app, /mutedFromPlayer\(/);
+  assert.match(app, /soundGestureFollowUp\(/);
+  assert.doesNotMatch(app, /getVolume/);
+  const player = read("js/player.mjs");
+  assert.match(player, /youtube-nocookie\.com/);
+  assert.match(player, /playsinline/);
+});
+
 test("manifest and icons keep working in the rose palette", () => {
   const manifest = JSON.parse(read("manifest.webmanifest"));
   assert.equal(manifest.name, "For Shania");
