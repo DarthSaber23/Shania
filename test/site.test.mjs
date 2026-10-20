@@ -137,11 +137,15 @@ test("the question No button changes its name before the dodge measures it", () 
   assert.match(press, /refusalAfterTap\(count, limit\)/);
   const unlock = app.slice(app.indexOf("function readLabelSize"), app.indexOf("function placeClear"));
   const place = app.slice(app.indexOf("function placeClear"), app.indexOf("function jump"));
+  const minAt = unlock.indexOf('minHeight = ""');
+  const widthAt = unlock.indexOf('width = "max-content"');
+  const offsetAt = unlock.indexOf("button.offsetWidth");
+  const guardAt = place.indexOf('dataset.dodge === "count"');
   const readAt = place.indexOf("readLabelSize(button)");
   const sizeAt = place.indexOf("placementSize(");
   const dodgeAt = place.indexOf("placeDodger(");
-  assert.match(unlock, /width = "max-content"/);
-  assert.ok(readAt > -1 && sizeAt > readAt && dodgeAt > sizeAt);
+  assert.ok(minAt > -1 && widthAt > minAt && offsetAt > widthAt);
+  assert.ok(guardAt > -1 && readAt > guardAt && sizeAt > readAt && dodgeAt > sizeAt);
 });
 
 test("manifest and icons keep working in the rose palette", () => {
