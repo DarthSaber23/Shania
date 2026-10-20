@@ -1,5 +1,6 @@
 import { buildConfetti } from "./celebrate.mjs";
 import { nextRefusal, placeDodger, rectsOverlap } from "./dodge.mjs";
+import { browserStorage, createNotifier } from "./notify.mjs";
 import {
   API_WAIT_MS,
   IFRAME_API_SRC,
@@ -193,6 +194,11 @@ function bindDodger(button) {
     if (mode === "count") {
       const result = nextRefusal(count, limit);
       count = result.count;
+      try {
+        notifier?.onNoTap(count, limit);
+      } catch {
+        // A failed notification must not stop the dodge or the navigation.
+      }
       if (result.openSure) {
         leaving = true;
         window.location.assign(nextUrl);
@@ -279,6 +285,55 @@ function startCelebration() {
     node.addEventListener("animationend", () => node.remove(), { once: true });
   }
 }
+
+function safeNotifier() {
+  const storage = browserStorage();
+  try {
+    const fetchImpl = typeof globalThis.fetch === "function"
+      ? globalThis.fetch.bind(globalThis)
+      : undefined;
+    const beacon = typeof globalThis.navigator?.sendBeacon === "function"
+      ? globalThis.navigator.sendBeacon.bind(globalThis.navigator)
+      : undefined;
+    return createNotifier({ fetchImpl, beacon, storage });
+  } catch {
+    return null;
+  }
+}
+
+function bootNotifier(notify) {
+  if (!notify) return;
+  try {
+    const mode = document.querySelector("[data-dodge]")?.dataset.dodge;
+    if (mode === "count") {
+      notify.onAskLoad();
+      document.querySelector('a[href="yeayy.html"]')?.addEventListener("click", () => {
+        try {
+          notify.armYes();
+        } catch {
+          // The Yes link still navigates.
+        }
+      });
+      return;
+    }
+    if (mode === "endless") {
+      notify.onSureLoad();
+      document.querySelector('a[href="index.html"]')?.addEventListener("click", () => {
+        try {
+          notify.armSureReturn();
+        } catch {
+          // The No link still returns home.
+        }
+      });
+      return;
+    }
+    if (document.querySelector("[data-celebrate]")) notify.onYeayyLoad();
+  } catch {
+    // Notifier setup must not block confetti or the dodge.
+  }
+}
+
+const notifier = safeNotifier();
 
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) window.location.reload();
@@ -431,5 +486,6 @@ function mountCelebrationVideo(root) {
 const dodger = document.querySelector("[data-dodge]");
 if (dodger) bindDodger(dodger);
 startCelebration();
+bootNotifier(notifier);
 const celebration = document.querySelector("[data-player]");
 if (celebration) mountCelebrationVideo(celebration);
