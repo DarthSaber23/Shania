@@ -50,7 +50,7 @@
       <button class="btn yes gate-send" type="button" data-gate-send>Kirim kode verifikasi</button>
       <p class="gate-error" data-gate-send-error role="alert" hidden></p>
     </div>
-    <form class="gate-form" data-gate-form>
+    <form class="gate-form" data-gate-form onsubmit="return false">
       <label class="gate-label" for="gate-code">Kode verifikasi</label>
       <input class="gate-code" id="gate-code" data-gate-code name="code" type="text" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-describedby="gate-wa">
       <p class="note gate-wa" id="gate-wa" data-gate-wa>Kode belum masuk? Chat Fajar di WhatsApp ya 😊</p>
@@ -59,7 +59,7 @@
         <button class="btn yes" type="submit">Masuk</button>
         <button class="btn no" type="button" data-gate-resend aria-describedby="gate-timer">Kirim ulang kode</button>
       </div>
-      <p class="gate-timer" id="gate-timer" data-gate-timer aria-live="polite"></p>
+      <p class="gate-timer" id="gate-timer" data-gate-timer></p>
     </form>
   </section>
   <main class="scene" id="page-main">

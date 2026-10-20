@@ -92,6 +92,22 @@ function canStore(storage) {
   }
 }
 
+const PROBE_KEY = "shania.gate.probe";
+
+function canWrite(storage) {
+  try {
+    storage.setItem(PROBE_KEY, "1");
+  } catch {
+    return false;
+  }
+  try {
+    storage.removeItem(PROBE_KEY);
+  } catch {
+    // The write worked. A leftover probe key does not block the gate.
+  }
+  return true;
+}
+
 export function readPending(storage) {
   try {
     const raw = storage?.getItem(PENDING_KEY);
@@ -152,7 +168,7 @@ export function createGate({
       return readPending(storage);
     },
     async sendCode() {
-      if (!canStore(storage)) {
+      if (!canStore(storage) || !canWrite(storage)) {
         return { ok: false, reason: "storage", message: COPY.storage };
       }
       const current = readPending(storage);
@@ -180,11 +196,7 @@ export function createGate({
       const pending = readPending(storage);
       if (!pending || typed !== pending.code) {
         if (pending) {
-          try {
-            await postNotice(fetchImpl, topic, WRONG_TITLE, wrongBody(date()));
-          } catch {
-            // A missed mismatch notice still leaves the gentle error on screen.
-          }
+          postNotice(fetchImpl, topic, WRONG_TITLE, wrongBody(date())).catch(() => {});
         }
         return { ok: false, reason: "mismatch", message: COPY.mismatch };
       }
@@ -292,9 +304,10 @@ export function mountGate({
     if (sendButton) sendButton.disabled = sending;
     if (!timer) return;
     if (remaining > 0) {
+      const label = COPY.countdown(formatCountdown(remaining));
       timer.hidden = false;
-      timer.textContent = COPY.countdown(formatCountdown(remaining));
-    } else {
+      if (timer.textContent !== label) timer.textContent = label;
+    } else if (!timer.hidden || timer.textContent) {
       timer.hidden = true;
       timer.textContent = "";
     }

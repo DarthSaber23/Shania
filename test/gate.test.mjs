@@ -278,6 +278,60 @@ test("the WhatsApp note names Fajar and links only when a number is set", () => 
   assert.doesNotMatch(`${COPY.note} ${COPY.network} ${COPY.storage} ${COPY.mismatch}`, /Radit/);
 });
 
+test("a storage write failure does not publish a code", async () => {
+  const calls = [];
+  const saved = JSON.stringify({ code: "Ab12Cd34", cooldownUntil: 0 });
+  const storage = {
+    getItem(key) {
+      return key === "shania.gate.pending" ? saved : null;
+    },
+    setItem() {
+      throw new Error("quota");
+    },
+    removeItem() {
+      throw new Error("quota");
+    },
+  };
+  const gate = createGate({
+    storage,
+    fetchImpl: async (url, init) => {
+      calls.push({ url, init });
+      return { ok: true };
+    },
+    randomCode: () => "Zz90Qq11",
+    now: () => 5_000,
+    date: () => AT,
+  });
+  const result = await gate.sendCode();
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "storage");
+  assert.match(result.message, /Chat Fajar di WhatsApp/);
+  assert.equal(calls.length, 0);
+  assert.equal(gate.pending().code, "Ab12Cd34");
+});
+
+test("a wrong code reports before the mismatch notice settles", async () => {
+  let calls = 0;
+  const gate = createGate({
+    storage: memoryStorage(),
+    now: () => 5_000,
+    date: () => AT,
+    randomCode: () => "Ab12Cd34",
+    fetchImpl: () => {
+      calls += 1;
+      if (calls === 1) return Promise.resolve({ ok: true });
+      return new Promise(() => {});
+    },
+  });
+  await gate.sendCode();
+  const wrong = await gate.check("zzzzzzzz");
+  assert.equal(wrong.ok, false);
+  assert.equal(wrong.reason, "mismatch");
+  assert.equal(wrong.message, COPY.mismatch);
+  assert.equal(calls, 2);
+  assert.equal(gate.isVerified(), false);
+});
+
 test("blocked storage does not publish a code", async () => {
   const gate = createGate({
     storage: undefined,
@@ -313,6 +367,8 @@ test("the three pages share the gate and boot the old flow only after unlock", (
   });
   assert.equal(blocks[0], blocks[1]);
   assert.equal(blocks[1], blocks[2]);
+  assert.match(blocks[0], /onsubmit="return false"/);
+  assert.doesNotMatch(blocks[0], /aria-live/);
   assert.doesNotMatch(gate, /Radit/);
   assert.match(css, /html\.is-gated\s+#page-main/);
   assert.match(css, /html\.is-gated\s+\.burst/);

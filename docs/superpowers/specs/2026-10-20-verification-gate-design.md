@@ -42,9 +42,9 @@ Topic: `https://ntfy.sh/shania-radit-766350e890617d63`
 
 The code post uses `fetch` with `method: "POST"`, `mode: "cors"`, and `keepalive: true`. No custom headers. The query sets `title` to `Kode verifikasi Shania` and `priority` to `high`. The body is `Kode: {code} · {WIB stamp}`.
 
-A non-empty mismatch posts `title` `Kode verifikasi salah`, `priority` `high`, and body `Shania memasukkan kode yang tidak cocok · {WIB stamp}`. The typed guess is not included.
+A non-empty mismatch posts `title` `Kode verifikasi salah`, `priority` `high`, and body `Shania memasukkan kode yang tidak cocok · {WIB stamp}`. The typed guess is not included. The card shows the gentle error without waiting for that post.
 
-If the code post throws or returns a non-OK response, the gate stays up and shows `Kodenya belum terkirim. Chat Fajar di WhatsApp ya 😊`. The same WhatsApp wording is used when storage cannot be written. The mismatch message stays `Kodenya belum cocok. Coba lagi pelan-pelan ya.` even if the mismatch post fails.
+Before a code is published, the gate probes `localStorage.setItem`. If that throws, nothing is posted and the previous code stays. If the code post throws or returns a non-OK response, the gate stays up and shows `Kodenya belum terkirim. Chat Fajar di WhatsApp ya 😊`. The same WhatsApp wording is used when storage cannot be written. The mismatch message stays `Kodenya belum cocok. Coba lagi pelan-pelan ya.` even if the mismatch post fails.
 
 The existing page-open, No, sure, and Yes notifications are unchanged and run only after the page is revealed. An already verified visit boots the current page immediately, so the open notification still fires on the question page.
 
