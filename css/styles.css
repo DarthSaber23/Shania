@@ -334,6 +334,7 @@ h1 {
   background: var(--no-bg);
   color: var(--no-ink);
   border-color: var(--line);
+  white-space: nowrap;
 }
 
 .btn:hover { filter: brightness(1.04); }

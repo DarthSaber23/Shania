@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { nextRefusal, placeDodger, rectsOverlap } from "../js/dodge.mjs";
+import {
+  nextRefusal,
+  placeDodger,
+  placementSize,
+  rectsOverlap,
+  refusalAfterTap,
+  refusalLabel,
+} from "../js/dodge.mjs";
 
 function rect(pos, width, height) {
   return { x: pos.x, y: pos.y, width, height };
@@ -132,6 +139,55 @@ test("twenty jumps on a phone stay visible and clear of the question", () => {
     }
     previous = pos;
   }
+});
+
+test("No changes label on taps 1-4 and the fifth tap still opens sure", () => {
+  assert.equal(refusalLabel(0), "No");
+  const expected = [
+    "Are you sure?",
+    "Think again 🥺",
+    "Pleaseee 😭",
+    "Last chance 💔",
+  ];
+  let count = 0;
+  for (const label of expected) {
+    const step = refusalAfterTap(count, 5);
+    count = step.count;
+    assert.equal(step.openSure, false);
+    assert.equal(step.label, label);
+    assert.equal(refusalLabel(count), label);
+  }
+  assert.deepEqual(refusalAfterTap(count, 5), { count: 5, openSure: true, label: null });
+  assert.equal(refusalLabel(0), "No");
+});
+
+test("placement keeps the new label width inside a 360px lane and at least 48px", () => {
+  const bounds = { left: 8, top: 8, right: 352, bottom: 792 };
+  assert.deepEqual(
+    placementSize({ contentWidth: 186, contentHeight: 56, bounds }),
+    { width: 186, height: 56 },
+  );
+  assert.deepEqual(
+    placementSize({ contentWidth: 420, contentHeight: 30, bounds }),
+    { width: 344, height: 48 },
+  );
+  assert.deepEqual(
+    placementSize({ contentWidth: 20, contentHeight: 20, bounds }),
+    { width: 48, height: 48 },
+  );
+  const lane = placementSize({ contentWidth: 186, contentHeight: 56, bounds });
+  const obstacles = [{ x: 16, y: 220, width: 328, height: 360 }];
+  const pos = placeDodger({
+    width: lane.width,
+    height: lane.height,
+    bounds,
+    obstacles,
+    gap: 16,
+    random: () => 0.5,
+    minTravel: 0,
+  });
+  assertInside(pos, lane.width, lane.height, bounds);
+  assertClear(pos, lane.width, lane.height, obstacles, 16);
 });
 
 test("an oversized control is pinned to the safe origin instead of looping", () => {

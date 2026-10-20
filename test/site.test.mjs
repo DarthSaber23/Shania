@@ -122,6 +122,32 @@ test("the celebration page keeps a 16:9 inline player and no page CSP", () => {
   assert.match(player, /playsinline/);
 });
 
+test("the question No button changes its name before the dodge measures it", () => {
+  const index = read("index.html");
+  const css = read("css/styles.css");
+  const app = read("js/app.mjs");
+  assert.match(index, /<button class="btn no" type="button" aria-label="No" data-dodge="count" data-limit="5" data-next="sure\.html">No<\/button>/);
+  assert.match(css, /\.btn\.no[^{]*\{[^}]*white-space:\s*nowrap/);
+  const press = app.slice(app.indexOf("const press = () =>"), app.indexOf("button.addEventListener"));
+  const openAt = press.indexOf("result.openSure");
+  const labelAt = press.indexOf("button.textContent = result.label");
+  const nameAt = press.indexOf('button.setAttribute("aria-label", result.label)');
+  const jumpAt = press.indexOf("jump(button)");
+  assert.ok(openAt > -1 && labelAt > openAt && nameAt > labelAt && jumpAt > nameAt);
+  assert.match(press, /refusalAfterTap\(count, limit\)/);
+  const unlock = app.slice(app.indexOf("function readLabelSize"), app.indexOf("function placeClear"));
+  const place = app.slice(app.indexOf("function placeClear"), app.indexOf("function jump"));
+  const minAt = unlock.indexOf('minHeight = ""');
+  const widthAt = unlock.indexOf('width = "max-content"');
+  const offsetAt = unlock.indexOf("button.offsetWidth");
+  const guardAt = place.indexOf('dataset.dodge === "count"');
+  const readAt = place.indexOf("readLabelSize(button)");
+  const sizeAt = place.indexOf("placementSize(");
+  const dodgeAt = place.indexOf("placeDodger(");
+  assert.ok(minAt > -1 && widthAt > minAt && offsetAt > widthAt);
+  assert.ok(guardAt > -1 && readAt > guardAt && sizeAt > readAt && dodgeAt > sizeAt);
+});
+
 test("manifest and icons keep working in the rose palette", () => {
   const manifest = JSON.parse(read("manifest.webmanifest"));
   assert.equal(manifest.name, "For Shania");

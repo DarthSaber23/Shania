@@ -3,6 +3,43 @@ export function nextRefusal(count, limit = 5) {
   return { count: next, openSure: next >= limit };
 }
 
+export const REFUSAL_LABELS = [
+  "No",
+  "Are you sure?",
+  "Think again 🥺",
+  "Pleaseee 😭",
+  "Last chance 💔",
+];
+
+export function refusalLabel(count) {
+  const index = Number.isFinite(count) ? Math.trunc(count) : 0;
+  if (index <= 0) return REFUSAL_LABELS[0];
+  if (index >= REFUSAL_LABELS.length - 1) return REFUSAL_LABELS[REFUSAL_LABELS.length - 1];
+  return REFUSAL_LABELS[index];
+}
+
+export function refusalAfterTap(count, limit = 5) {
+  const step = nextRefusal(count, limit);
+  if (step.openSure) return { count: step.count, openSure: true, label: null };
+  return { count: step.count, openSure: false, label: refusalLabel(step.count) };
+}
+
+export function placementSize({ contentWidth, contentHeight, bounds, minTarget = 48 }) {
+  if (!(contentWidth > 0) || !(contentHeight > 0)) {
+    throw new Error("The fleeing button needs a positive size.");
+  }
+  const laneW = bounds.right - bounds.left;
+  const laneH = bounds.bottom - bounds.top;
+  if (!(laneW > 0) || !(laneH > 0)) {
+    throw new Error("The viewport bounds are empty.");
+  }
+  let width = Math.min(contentWidth, laneW);
+  let height = Math.min(contentHeight, laneH);
+  if (width < minTarget) width = Math.min(minTarget, laneW);
+  if (height < minTarget) height = Math.min(minTarget, laneH);
+  return { width, height };
+}
+
 export function rectsOverlap(a, b, gap = 0) {
   return (
     a.x < b.x + b.width + gap &&
