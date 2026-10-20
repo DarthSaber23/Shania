@@ -18,11 +18,26 @@
   <script>
     try {
       var root = document.documentElement;
-      if (localStorage.getItem("shania.gate.verified") === "1") {
+      var INACTIVITY_MS = 15 * 60 * 1000;
+      var ABSOLUTE_MS = 60 * 60 * 1000;
+      var verified = localStorage.getItem("shania.gate.verified") === "1";
+      var session = null;
+      try {
+        session = JSON.parse(localStorage.getItem("shania.gate.session") || "null");
+      } catch (parseError) {
+        session = null;
+      }
+      var now = Date.now();
+      var fresh = !!(verified && session
+        && typeof session.verifiedAt === "number"
+        && typeof session.lastActivityAt === "number"
+        && now - session.verifiedAt < ABSOLUTE_MS
+        && now - session.lastActivityAt < INACTIVITY_MS);
+      if (fresh) {
         root.classList.add("is-verified");
       } else {
         root.classList.add("is-gated");
-        if (localStorage.getItem("shania.gate.pending")) root.classList.add("has-code");
+        if (!verified && localStorage.getItem("shania.gate.pending")) root.classList.add("has-code");
       }
     } catch (error) {
       document.documentElement.classList.add("is-gated");
@@ -45,6 +60,7 @@
     <p class="eyebrow">For you</p>
     <h1 id="gate-title">Verifikasi dulu ya</h1>
     <p class="note gate-lead">Kirim kodenya dulu, nanti tinggal masukin di sini.</p>
+    <p class="gate-error gate-expired" data-gate-expired role="alert" hidden></p>
     <p class="note gate-sent">Kode sudah dikirim. Masukin di sini ya.</p>
     <div class="gate-send-wrap">
       <button class="btn yes gate-send" type="button" data-gate-send>Kirim kode verifikasi</button>

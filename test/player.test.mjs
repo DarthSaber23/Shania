@@ -15,6 +15,7 @@ import {
   playerVars,
   reducePlayer,
   soundGestureFollowUp,
+  stopYouTube,
 } from "../js/player.mjs";
 
 test("the embed URL is the privacy host with inline autoplay", () => {
@@ -203,4 +204,49 @@ test("the veil copy matches the view", () => {
   applyPlayerView(live, "playing");
   assert.equal(live.veil.hidden, true);
   assert.equal(live.fallback.hidden, true);
+});
+
+test("stopYouTube pauses, stops, and posts the iframe command", () => {
+  const calls = [];
+  const messages = [];
+  stopYouTube({
+    player: {
+      pauseVideo() {
+        calls.push("pause");
+      },
+      stopVideo() {
+        calls.push("stop");
+      },
+    },
+    postMessage(data, origin) {
+      messages.push({ data, origin });
+    },
+  });
+  assert.deepEqual(calls, ["pause", "stop"]);
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0].origin, NOCOOKIE_HOST);
+  assert.deepEqual(JSON.parse(messages[0].data), {
+    event: "command",
+    func: "stopVideo",
+    args: "",
+  });
+});
+
+test("stopYouTube still posts the command when the player throws", () => {
+  const messages = [];
+  stopYouTube({
+    player: {
+      pauseVideo() {
+        throw new Error("gone");
+      },
+      stopVideo() {
+        throw new Error("gone");
+      },
+    },
+    postMessage(data, origin) {
+      messages.push({ data, origin });
+    },
+  });
+  assert.equal(messages.length, 1);
+  assert.equal(JSON.parse(messages[0].data).func, "stopVideo");
 });

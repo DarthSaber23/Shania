@@ -494,6 +494,10 @@ html.has-code .gate-form {
   line-height: 1.35;
 }
 
+.gate-expired {
+  margin-top: 0.85rem;
+}
+
 .gate-send-wrap .gate-error {
   margin-top: 0.75rem;
 }

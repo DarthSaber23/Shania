@@ -15,6 +15,7 @@ import {
   playerVars,
   reducePlayer,
   soundGestureFollowUp,
+  stopYouTube,
 } from "./player.mjs";
 
 const GAP = 16;
@@ -360,6 +361,26 @@ function bootNotifier(notify) {
 }
 
 const notifier = safeNotifier();
+let celebrationPlayer = null;
+let videoLocked = false;
+let stopRequested = false;
+
+function stopCelebrationVideo() {
+  videoLocked = true;
+  if (stopRequested) return;
+  stopRequested = true;
+  const iframe = document.querySelector("[data-player-frame] iframe, [data-player] iframe");
+  const target = iframe?.contentWindow;
+  stopYouTube({
+    player: celebrationPlayer,
+    postMessage: target ? target.postMessage.bind(target) : undefined,
+  });
+}
+
+function allowCelebrationVideo() {
+  videoLocked = false;
+  stopRequested = false;
+}
 
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) window.location.reload();
@@ -471,11 +492,21 @@ function mountCelebrationVideo(root) {
           onReady: (event) => {
             window.clearTimeout(apiTimer);
             player = event.target;
+            celebrationPlayer = player;
             prepareFrame(player);
+            if (videoLocked) {
+              stopCelebrationVideo();
+              return;
+            }
             dispatch({ type: "api-ready" });
           },
           onStateChange: (event) => {
             player = event.target;
+            celebrationPlayer = player;
+            if (videoLocked) {
+              stopCelebrationVideo();
+              return;
+            }
             const playing = event.data === 1;
             const muted = mutedFromPlayer(() => event.target.isMuted());
             dispatch({ type: "state", playing, muted });
@@ -530,6 +561,8 @@ function bootExperience() {
 
 mountGate({
   onUnlock: bootExperience,
+  onLock: stopCelebrationVideo,
+  onResume: allowCelebrationVideo,
   storage: pageStorage(),
   fetchImpl: typeof globalThis.fetch === "function"
     ? globalThis.fetch.bind(globalThis)
