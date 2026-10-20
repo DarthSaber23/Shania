@@ -1,6 +1,6 @@
 # Shania
 
-A mobile-first static page that asks Shania a question. It needs no build step.
+A mobile-first static page that asks Shania a question. It needs no build step. Each page stays behind a verification gate until the latest code is entered. The code is sent to the existing phone topic, and the question, the sure page, and the celebration run after it matches.
 
 `index.html` asks the question. Yes opens `yeayy.html`. No jumps away on tap, and its label goes from No to Are you sure?, Think again, Pleaseee, and Last chance. The fifth press opens `sure.html`, where Yes is the button that keeps moving and No returns to the question, which loads again with the counter at zero and the label No. `yeayy.html` plays the celebration clip (`tt6FPKyQamk`) inline from the privacy-enhanced YouTube host. If sound is blocked, the page asks for a tap; if the embed cannot load, it links to the video. An empty `.nojekyll` file is included so Pages serves those files as-is. `manifest.webmanifest` plus the PNG icons let the page be added to a phone home screen.
 

@@ -1,5 +1,6 @@
 import { buildConfetti } from "./celebrate.mjs";
 import { placeDodger, placementSize, rectsOverlap, refusalAfterTap } from "./dodge.mjs";
+import { WA_NUMBER, mountGate } from "./gate.mjs";
 import { browserStorage, createNotifier } from "./notify.mjs";
 import {
   API_WAIT_MS,
@@ -508,9 +509,30 @@ function mountCelebrationVideo(root) {
   document.head.append(script);
 }
 
-const dodger = document.querySelector("[data-dodge]");
-if (dodger) bindDodger(dodger);
-startCelebration();
-bootNotifier(notifier);
-const celebration = document.querySelector("[data-player]");
-if (celebration) mountCelebrationVideo(celebration);
+function pageStorage() {
+  try {
+    const storage = globalThis.localStorage;
+    storage.getItem("shania.gate.verified");
+    return storage;
+  } catch {
+    return undefined;
+  }
+}
+
+function bootExperience() {
+  const dodger = document.querySelector("[data-dodge]");
+  if (dodger) bindDodger(dodger);
+  startCelebration();
+  bootNotifier(notifier);
+  const celebration = document.querySelector("[data-player]");
+  if (celebration) mountCelebrationVideo(celebration);
+}
+
+mountGate({
+  onUnlock: bootExperience,
+  storage: pageStorage(),
+  fetchImpl: typeof globalThis.fetch === "function"
+    ? globalThis.fetch.bind(globalThis)
+    : undefined,
+  waNumber: WA_NUMBER,
+});

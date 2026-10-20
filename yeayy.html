@@ -15,6 +15,19 @@
   <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="stylesheet" href="css/styles.css">
+  <script>
+    try {
+      var root = document.documentElement;
+      if (localStorage.getItem("shania.gate.verified") === "1") {
+        root.classList.add("is-verified");
+      } else {
+        root.classList.add("is-gated");
+        if (localStorage.getItem("shania.gate.pending")) root.classList.add("has-code");
+      }
+    } catch (error) {
+      document.documentElement.classList.add("is-gated");
+    }
+  </script>
 </head>
 <body>
   <div class="sky" aria-hidden="true">
@@ -27,7 +40,29 @@
   </div>
   <div class="burst" data-celebrate aria-hidden="true"></div>
   <div id="safe-probe" aria-hidden="true"></div>
-  <main class="scene">
+  <section class="gate scene" data-verify-gate aria-labelledby="gate-title">
+    <p class="big-heart" aria-hidden="true">♥</p>
+    <p class="eyebrow">For you</p>
+    <h1 id="gate-title">Verifikasi dulu ya</h1>
+    <p class="note gate-lead">Kirim kodenya dulu, nanti tinggal masukin di sini.</p>
+    <p class="note gate-sent">Kode sudah dikirim. Masukin di sini ya.</p>
+    <div class="gate-send-wrap">
+      <button class="btn yes gate-send" type="button" data-gate-send>Kirim kode verifikasi</button>
+      <p class="gate-error" data-gate-send-error role="alert" hidden></p>
+    </div>
+    <form class="gate-form" data-gate-form onsubmit="return false">
+      <label class="gate-label" for="gate-code">Kode verifikasi</label>
+      <input class="gate-code" id="gate-code" data-gate-code name="code" type="text" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-describedby="gate-wa">
+      <p class="note gate-wa" id="gate-wa" data-gate-wa>Kode belum masuk? Chat Fajar di WhatsApp ya 😊</p>
+      <p class="gate-error" data-gate-error role="alert" hidden></p>
+      <div class="gate-actions">
+        <button class="btn yes" type="submit">Masuk</button>
+        <button class="btn no" type="button" data-gate-resend aria-describedby="gate-timer">Kirim ulang kode</button>
+      </div>
+      <p class="gate-timer" id="gate-timer" data-gate-timer></p>
+    </form>
+  </section>
+  <main class="scene" id="page-main">
     <p class="big-heart" aria-hidden="true">♥</p>
     <p class="eyebrow">For us</p>
     <h1>Yeayy!</h1>
