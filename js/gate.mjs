@@ -1,4 +1,20 @@
 import { TOPIC, wibStamp } from "./notify.mjs";
+import {
+  ABSOLUTE_MS,
+  ACTIVITY_EVENTS,
+  EXPIRY_NOTICE_KEY,
+  EXPIRY_TITLE,
+  INACTIVITY_MS,
+  SESSION_KEY,
+  claimExpiryNotice,
+  createSessionController,
+  expiryBody,
+  expiryReason,
+  hasExpiryNotice,
+  readSession,
+  resolveDurations,
+  writeSession,
+} from "./session.mjs";
 
 export const WA_NUMBER = "";
 export const COOLDOWN_MS = 60_000;
@@ -20,6 +36,7 @@ export const COPY = {
   network: "Kodenya belum terkirim. Chat Fajar di WhatsApp ya 😊",
   storage: "Halaman ini tidak bisa menyimpan kodenya. Chat Fajar di WhatsApp ya 😊",
   sent: "Kode sudah dikirim. Masukin di sini ya.",
+  expired: "Sesi kamu habis, minta kode baru ya 😊",
   countdown(label) {
     return `Kirim ulang dalam ${label}`;
   },
@@ -146,6 +163,19 @@ async function postNotice(fetchImpl, topic, title, body) {
   return Boolean(response && response.ok);
 }
 
+function clearVerifiedState(storage) {
+  try {
+    storage?.removeItem(VERIFIED_KEY);
+  } catch {
+    // The page still has to hide once the session is no longer trustworthy.
+  }
+  try {
+    storage?.removeItem(SESSION_KEY);
+  } catch {
+    // Same as above.
+  }
+}
+
 export function createGate({
   fetchImpl,
   storage,
@@ -153,13 +183,19 @@ export function createGate({
   now = () => Date.now(),
   date = () => new Date(),
   randomCode: mint,
+  inactivityMs = INACTIVITY_MS,
+  absoluteMs = ABSOLUTE_MS,
 } = {}) {
   const nextCode = mint || (() => randomCode());
+  const durations = { inactivityMs, absoluteMs };
 
   return {
     isVerified() {
       try {
-        return storage?.getItem(VERIFIED_KEY) === "1";
+        if (storage?.getItem(VERIFIED_KEY) !== "1") return false;
+        const session = readSession(storage);
+        if (!session) return false;
+        return expiryReason(session, now(), durations) === null;
       } catch {
         return false;
       }
@@ -200,13 +236,42 @@ export function createGate({
         }
         return { ok: false, reason: "mismatch", message: COPY.mismatch };
       }
+      const at = now();
       try {
         storage.setItem(VERIFIED_KEY, "1");
         storage.removeItem(PENDING_KEY);
+        storage.removeItem(EXPIRY_NOTICE_KEY);
+        if (!writeSession(storage, { verifiedAt: at, lastActivityAt: at })) {
+          throw new Error("session");
+        }
       } catch {
+        clearVerifiedState(storage);
         return { ok: false, reason: "storage", message: COPY.storage };
       }
       return { ok: true };
+    },
+    enforce() {
+      let flagged = false;
+      try {
+        flagged = storage?.getItem(VERIFIED_KEY) === "1";
+      } catch {
+        return { ok: false, reason: "storage", notified: false };
+      }
+      if (!flagged) return { ok: false, reason: "signed-out", notified: false };
+      const session = readSession(storage);
+      if (!session) {
+        clearVerifiedState(storage);
+        return { ok: false, reason: "invalid", notified: false };
+      }
+      const reason = expiryReason(session, now(), durations);
+      if (!reason) return { ok: true, session };
+      const notified = claimExpiryNotice(storage, String(session.verifiedAt));
+      clearVerifiedState(storage);
+      if (notified) {
+        const body = expiryBody(reason, date(), durations);
+        postNotice(fetchImpl, topic, EXPIRY_TITLE, body).catch(() => {});
+      }
+      return { ok: false, reason, notified };
     },
   };
 }
@@ -236,13 +301,19 @@ function applyNote(documentRef, element, number) {
 export function mountGate({
   documentRef = globalThis.document,
   onUnlock,
+  onLock,
+  onResume,
   storage,
   fetchImpl,
   waNumber = WA_NUMBER,
   now = () => Date.now(),
   date = () => new Date(),
   topic = TOPIC,
+  inactivityMs = INACTIVITY_MS,
+  absoluteMs = ABSOLUTE_MS,
 } = {}) {
+  const view = documentRef?.defaultView || globalThis;
+  const durations = resolveDurations(view.location?.search || "", { inactivityMs, absoluteMs });
   const gate = createGate({
     storage,
     fetchImpl,
@@ -250,45 +321,23 @@ export function mountGate({
     now,
     date,
     topic,
+    inactivityMs: durations.inactivityMs,
+    absoluteMs: durations.absoluteMs,
   });
-  const root = documentRef?.querySelector("[data-verify-gate]");
-  const main = documentRef?.getElementById("page-main");
-  const view = documentRef?.defaultView || globalThis;
-  let opened = false;
-  let sending = false;
-  let timerId = 0;
-
-  const reveal = () => {
-    if (opened) return;
-    opened = true;
-    if (timerId) view.clearInterval(timerId);
-    documentRef?.documentElement.classList.remove("is-gated", "has-code");
-    documentRef?.documentElement.classList.add("is-verified");
-    main?.removeAttribute("inert");
-    root?.setAttribute("hidden", "");
-    onUnlock?.();
-  };
-
-  if (gate.isVerified() || !root || !documentRef) {
-    reveal();
+  const root = documentRef?.querySelector?.("[data-verify-gate]");
+  const main = documentRef?.getElementById?.("page-main");
+  if (!root || !documentRef) {
+    if (gate.isVerified()) onUnlock?.();
     return gate;
   }
 
   const html = documentRef.documentElement;
-  html.classList.add("is-gated");
-  html.classList.remove("is-verified");
-  main?.setAttribute("inert", "");
-  if (gate.pending()) html.classList.add("has-code");
-  else html.classList.remove("has-code");
-
   const previousTitle = documentRef.title;
-  documentRef.title = "Verifikasi dulu ya";
-  const finish = () => {
-    documentRef.title = previousTitle;
-    reveal();
-  };
-
-  applyNote(documentRef, root.querySelector("[data-gate-wa]"), waNumber);
+  let opened = false;
+  let booted = false;
+  let watching = false;
+  let sending = false;
+  let timerId = 0;
 
   const sendButton = root.querySelector("[data-gate-send]");
   const resendButton = root.querySelector("[data-gate-resend]");
@@ -297,6 +346,13 @@ export function mountGate({
   const sendError = root.querySelector("[data-gate-send-error]");
   const formError = root.querySelector("[data-gate-error]");
   const timer = root.querySelector("[data-gate-timer]");
+  const expiredNode = root.querySelector("[data-gate-expired]");
+
+  const stopPaint = () => {
+    if (!timerId) return;
+    view.clearInterval(timerId);
+    timerId = 0;
+  };
 
   const paint = () => {
     const remaining = cooldownRemaining(gate.pending(), now());
@@ -312,6 +368,111 @@ export function mountGate({
       timer.textContent = "";
     }
   };
+
+  const startPaint = () => {
+    paint();
+    if (!timerId) timerId = view.setInterval(paint, 250);
+  };
+
+  const controller = createSessionController({
+    storage,
+    now,
+    setTimeout: (fn, ms) => view.setTimeout(fn, ms),
+    clearTimeout: (id) => view.clearTimeout(id),
+    inactivityMs: durations.inactivityMs,
+    absoluteMs: durations.absoluteMs,
+    enforce: () => gate.enforce(),
+    onExpire: (result) => {
+      const expired = result.reason === "inactive"
+        || result.reason === "absolute"
+        || result.reason === "invalid"
+        || hasExpiryNotice(storage);
+      lock({ expired });
+    },
+  });
+
+  const reveal = () => {
+    if (opened) return;
+    opened = true;
+    watching = true;
+    stopPaint();
+    html.classList.remove("is-gated", "has-code");
+    html.classList.add("is-verified");
+    main?.removeAttribute("inert");
+    root.setAttribute("hidden", "");
+    setMessage(expiredNode, "");
+    documentRef.title = previousTitle;
+    controller.start();
+    if (!watching) return;
+    if (!booted) {
+      booted = true;
+      onUnlock?.();
+      return;
+    }
+    onResume?.();
+  };
+
+  const lock = ({ expired }) => {
+    watching = false;
+    opened = false;
+    controller.stop();
+    if (booted) {
+      try {
+        onLock?.();
+      } catch {
+        // Stopping the video must not leave the page visible.
+      }
+    }
+    html.classList.add("is-gated");
+    html.classList.remove("is-verified", "has-code");
+    main?.setAttribute("inert", "");
+    root.removeAttribute("hidden");
+    documentRef.title = "Verifikasi dulu ya";
+    setMessage(expiredNode, expired ? COPY.expired : "");
+    applyNote(documentRef, root.querySelector("[data-gate-wa]"), waNumber);
+    startPaint();
+    try {
+      sendButton?.focus({ preventScroll: true });
+    } catch {
+      // Focus is a convenience. The gate is already on screen.
+    }
+  };
+
+  const presentGate = ({ expired }) => {
+    html.classList.add("is-gated");
+    html.classList.remove("is-verified");
+    if (gate.pending()) html.classList.add("has-code");
+    else html.classList.remove("has-code");
+    main?.setAttribute("inert", "");
+    root.removeAttribute("hidden");
+    documentRef.title = "Verifikasi dulu ya";
+    setMessage(expiredNode, expired ? COPY.expired : "");
+    applyNote(documentRef, root.querySelector("[data-gate-wa]"), waNumber);
+    startPaint();
+  };
+
+  const onActivity = () => {
+    if (!watching) return;
+    if (documentRef.visibilityState === "hidden") return;
+    controller.noteActivity();
+  };
+  for (const type of ACTIVITY_EVENTS) {
+    documentRef.addEventListener(type, onActivity, { capture: true, passive: true });
+  }
+  documentRef.addEventListener("visibilitychange", () => {
+    if (!watching) return;
+    if (documentRef.visibilityState === "hidden") controller.persist();
+    else controller.check();
+  });
+  view.addEventListener?.("pagehide", () => {
+    if (!watching) return;
+    controller.persist();
+  });
+  view.addEventListener?.("storage", (event) => {
+    if (!watching || !event) return;
+    if (event.key !== SESSION_KEY && event.key !== VERIFIED_KEY && event.key !== EXPIRY_NOTICE_KEY) return;
+    controller.check();
+  });
 
   const requestCode = async () => {
     if (sending) return;
@@ -349,7 +510,7 @@ export function mountGate({
     try {
       const result = await gate.check(input?.value);
       if (result.ok) {
-        finish();
+        reveal();
         return;
       }
       setMessage(formError, result.message || COPY.mismatch);
@@ -373,7 +534,18 @@ export function mountGate({
     }, 300);
   });
 
-  paint();
-  timerId = view.setInterval(paint, 250);
+  let flagged = false;
+  try {
+    flagged = storage?.getItem(VERIFIED_KEY) === "1";
+  } catch {
+    flagged = false;
+  }
+  if (flagged) {
+    const result = gate.enforce();
+    if (result.ok) reveal();
+    else lock({ expired: true });
+  } else {
+    presentGate({ expired: hasExpiryNotice(storage) });
+  }
   return gate;
 }

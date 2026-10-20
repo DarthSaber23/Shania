@@ -14,6 +14,7 @@ import {
   mutedFromPlayer,
   playerVars,
   reducePlayer,
+  createPlaybackLock,
   soundGestureFollowUp,
 } from "./player.mjs";
 
@@ -360,6 +361,22 @@ function bootNotifier(notify) {
 }
 
 const notifier = safeNotifier();
+const playback = createPlaybackLock();
+let celebrationPlayer = null;
+
+function playerPostMessage() {
+  const iframe = document.querySelector("[data-player-frame] iframe, [data-player] iframe");
+  const target = iframe?.contentWindow;
+  return target ? target.postMessage.bind(target) : undefined;
+}
+
+function stopCelebrationVideo() {
+  playback.lock(celebrationPlayer, playerPostMessage());
+}
+
+function allowCelebrationVideo() {
+  playback.unlock();
+}
 
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) window.location.reload();
@@ -410,7 +427,7 @@ function mountCelebrationVideo(root) {
   };
 
   const runAction = (action) => {
-    if (!player || !action) return;
+    if (playback.isLocked() || !player || !action) return;
     if (action === "play-unmuted") {
       player.unMute?.();
       player.playVideo?.();
@@ -446,6 +463,11 @@ function mountCelebrationVideo(root) {
   };
 
   const dispatch = (event) => {
+    if (playback.isLocked()) {
+      window.clearTimeout(playTimer);
+      window.clearTimeout(apiTimer);
+      return;
+    }
     const result = reducePlayer(session, event);
     session = result.session;
     paint();
@@ -471,11 +493,15 @@ function mountCelebrationVideo(root) {
           onReady: (event) => {
             window.clearTimeout(apiTimer);
             player = event.target;
+            celebrationPlayer = player;
             prepareFrame(player);
+            if (playback.beforePlay(player, playerPostMessage()) === "stopped") return;
             dispatch({ type: "api-ready" });
           },
           onStateChange: (event) => {
             player = event.target;
+            celebrationPlayer = player;
+            if (playback.beforePlay(event.target, playerPostMessage()) === "stopped") return;
             const playing = event.data === 1;
             const muted = mutedFromPlayer(() => event.target.isMuted());
             dispatch({ type: "state", playing, muted });
@@ -530,6 +556,8 @@ function bootExperience() {
 
 mountGate({
   onUnlock: bootExperience,
+  onLock: stopCelebrationVideo,
+  onResume: allowCelebrationVideo,
   storage: pageStorage(),
   fetchImpl: typeof globalThis.fetch === "function"
     ? globalThis.fetch.bind(globalThis)

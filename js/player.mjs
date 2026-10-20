@@ -112,6 +112,59 @@ export function reducePlayer(session, event) {
   return { session: next, action };
 }
 
+export function createPlaybackLock() {
+  let locked = false;
+  let stopping = false;
+  const stop = (player, postMessage) => {
+    if (stopping) return;
+    stopping = true;
+    try {
+      stopYouTube({ player, postMessage });
+    } finally {
+      stopping = false;
+    }
+  };
+  return {
+    isLocked() {
+      return locked;
+    },
+    lock(player, postMessage) {
+      locked = true;
+      stop(player, postMessage);
+    },
+    unlock() {
+      locked = false;
+    },
+    beforePlay(player, postMessage) {
+      if (!locked) return "play";
+      stop(player, postMessage);
+      return "stopped";
+    },
+  };
+}
+
+export function stopYouTube({ player, postMessage, origin = NOCOOKIE_HOST } = {}) {
+  try {
+    player?.pauseVideo?.();
+  } catch {
+    // A detached player can still be stopped through the iframe.
+  }
+  try {
+    player?.stopVideo?.();
+  } catch {
+    // Same as above.
+  }
+  try {
+    postMessage?.(JSON.stringify({
+      event: "command",
+      func: "stopVideo",
+      args: "",
+    }), origin);
+  } catch {
+    // The page is already locking.
+  }
+}
+
 export function applyPlayerView(nodes, view) {
   const prompt = view === "loading" || view === "tap-to-play" || view === "tap-for-sound";
   nodes.frame.dataset.view = view;
