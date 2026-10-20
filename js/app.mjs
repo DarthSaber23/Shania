@@ -1,5 +1,5 @@
 import { buildConfetti } from "./celebrate.mjs";
-import { nextRefusal, placeDodger, rectsOverlap } from "./dodge.mjs";
+import { placeDodger, placementSize, rectsOverlap, refusalAfterTap } from "./dodge.mjs";
 import { browserStorage, createNotifier } from "./notify.mjs";
 import {
   API_WAIT_MS,
@@ -70,15 +70,38 @@ function detach(button) {
   button.style.height = `${height}px`;
 }
 
+function readLabelSize(button) {
+  button.style.whiteSpace = "nowrap";
+  button.style.maxWidth = "none";
+  button.style.minWidth = "";
+  button.style.minHeight = "";
+  button.style.width = "max-content";
+  button.style.height = "auto";
+  const style = getComputedStyle(button);
+  const borderX = (Number.parseFloat(style.borderLeftWidth) || 0)
+    + (Number.parseFloat(style.borderRightWidth) || 0);
+  const borderY = (Number.parseFloat(style.borderTopWidth) || 0)
+    + (Number.parseFloat(style.borderBottomWidth) || 0);
+  let contentWidth = button.offsetWidth;
+  let contentHeight = button.offsetHeight;
+  if (button.scrollWidth > button.offsetWidth + 1) contentWidth = button.scrollWidth + borderX;
+  if (button.scrollHeight > button.offsetHeight + 1) contentHeight = button.scrollHeight + borderY;
+  return { contentWidth, contentHeight };
+}
+
 function placeClear(button, previous, minTravel) {
   const bounds = viewportBounds();
   const obstacles = obstacleRects(button);
-  let width = button.offsetWidth;
-  let height = button.offsetHeight;
-  const maxWidth = bounds.right - bounds.left;
-  const maxHeight = bounds.bottom - bounds.top;
-  if (maxWidth > 0 && width > maxWidth) width = maxWidth;
-  if (maxHeight > 0 && height > maxHeight) height = maxHeight;
+  const measured = button.dataset.dodge === "count"
+    ? readLabelSize(button)
+    : { contentWidth: button.offsetWidth, contentHeight: button.offsetHeight };
+  const fitted = placementSize({
+    contentWidth: measured.contentWidth,
+    contentHeight: measured.contentHeight,
+    bounds,
+  });
+  const width = fitted.width;
+  const height = fitted.height;
   const options = [
     { width, height, gap: GAP },
     { width: Math.min(width, 112), height, gap: GAP },
@@ -192,7 +215,7 @@ function bindDodger(button) {
   const press = () => {
     if (leaving) return;
     if (mode === "count") {
-      const result = nextRefusal(count, limit);
+      const result = refusalAfterTap(count, limit);
       count = result.count;
       try {
         notifier?.onNoTap(count, limit);
@@ -204,6 +227,8 @@ function bindDodger(button) {
         window.location.assign(nextUrl);
         return;
       }
+      button.textContent = result.label;
+      button.setAttribute("aria-label", result.label);
     }
     jump(button);
     announce(`${button.textContent.trim()} slipped away`);
