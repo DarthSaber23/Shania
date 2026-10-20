@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { nextRefusal, placeDodger, rectsOverlap } from "../js/dodge.mjs";
+import { nextRefusal, placeDodger, rectsOverlap, refusalAfterTap, refusalLabel } from "../js/dodge.mjs";
 
 function rect(pos, width, height) {
   return { x: pos.x, y: pos.y, width, height };
@@ -132,6 +132,26 @@ test("twenty jumps on a phone stay visible and clear of the question", () => {
     }
     previous = pos;
   }
+});
+
+test("No changes label on taps 1-4 and the fifth tap still opens sure", () => {
+  assert.equal(refusalLabel(0), "No");
+  const expected = [
+    "Are you sure?",
+    "Think again 🥺",
+    "Pleaseee 😭",
+    "Last chance 💔",
+  ];
+  let count = 0;
+  for (const label of expected) {
+    const step = refusalAfterTap(count, 5);
+    count = step.count;
+    assert.equal(step.openSure, false);
+    assert.equal(step.label, label);
+    assert.equal(refusalLabel(count), label);
+  }
+  assert.deepEqual(refusalAfterTap(count, 5), { count: 5, openSure: true, label: null });
+  assert.equal(refusalLabel(0), "No");
 });
 
 test("an oversized control is pinned to the safe origin instead of looping", () => {

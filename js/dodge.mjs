@@ -3,6 +3,27 @@ export function nextRefusal(count, limit = 5) {
   return { count: next, openSure: next >= limit };
 }
 
+export const REFUSAL_LABELS = [
+  "No",
+  "Are you sure?",
+  "Think again 🥺",
+  "Pleaseee 😭",
+  "Last chance 💔",
+];
+
+export function refusalLabel(count) {
+  const index = Number.isFinite(count) ? Math.trunc(count) : 0;
+  if (index <= 0) return REFUSAL_LABELS[0];
+  if (index >= REFUSAL_LABELS.length - 1) return REFUSAL_LABELS[REFUSAL_LABELS.length - 1];
+  return REFUSAL_LABELS[index];
+}
+
+export function refusalAfterTap(count, limit = 5) {
+  const step = nextRefusal(count, limit);
+  if (step.openSure) return { count: step.count, openSure: true, label: null };
+  return { count: step.count, openSure: false, label: refusalLabel(step.count) };
+}
+
 export function rectsOverlap(a, b, gap = 0) {
   return (
     a.x < b.x + b.width + gap &&
